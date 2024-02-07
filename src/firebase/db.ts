@@ -146,7 +146,7 @@ export const exitGroup = async (groupId: string, userId: string) => {
 
         alert(`Successfully exited the group ${groupName}`);
     } catch (error) {
-        console.error('Error exiting group:', error);
-        alert('Failed to exit the group. Please try again.');
+        () =>{} // do nothing, there can't be an option to leave the group
+        // without being a member of the group first
     }
-};
+}

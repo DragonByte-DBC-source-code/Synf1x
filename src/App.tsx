@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Signup, Home, Loading, Group } from './pages';
-import { getAuth, onAuthStateChanged, } from 'firebase/auth';
-import { Route, Routes, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { Signup, Home, Loading, Group } from "./pages";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { Route, Routes, useNavigate, useLocation } from "react-router-dom";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -10,8 +10,8 @@ const App = () => {
   const location = useLocation();
 
   const routes = {
-    home: '/',
-    signup: '/signup',
+    home: "/",
+    signup: "/signup",
     group: (id: string) => `/${id}`,
   };
 
@@ -27,14 +27,16 @@ const App = () => {
         }
       } else if (location.pathname === routes.signup) {
         navigate(routes.home);
-      } else if (!location.pathname.startsWith(routes.group('')) && !(location.pathname in routes)) {
+      } else if (
+        !location.pathname.startsWith(routes.group("")) &&
+        !(location.pathname in routes)
+      ) {
         navigate(routes.home);
       }
     });
-  
+
     return () => unsubscribe(); // Cleanup function
   }, [navigate, location, routes]);
-  
 
   return (
     <>
@@ -44,7 +46,7 @@ const App = () => {
         <Routes>
           <Route path={routes.home} element={<Home user={user} />} />
           <Route path={routes.signup} element={<Signup />} />
-          <Route path={routes.group(':id')} element={<Group user = {user}/>} />
+          <Route path={routes.group(":id")} element={<Group user={user} />} />
         </Routes>
       )}
     </>
