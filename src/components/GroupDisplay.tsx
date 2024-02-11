@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Loading from './Loading';
-import { useSpring, animated } from 'react-spring';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import Loading from "./Loading";
+import { useSpring, animated } from "react-spring";
 
-import './css/scrollbar.css';
+import "./css/scrollbar.css";
 
 type Group = {
   id: string;
@@ -11,13 +11,12 @@ type Group = {
   members: string[];
 };
 
-type GroupItemProps = {
+interface GroupItemProps {
   group: Group;
-  onClick: () => void;
   delay: number;
-};
+}
 
-const GroupItem: React.FC<GroupItemProps> = ({ group, onClick, delay }) => {
+const GroupItem: React.FC<GroupItemProps> = ({ group, delay }) => {
   const [isVisible, setIsVisible] = useState(false);
   const targetRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +24,7 @@ const GroupItem: React.FC<GroupItemProps> = ({ group, onClick, delay }) => {
     opacity: isVisible ? 1 : 0,
     from: { opacity: 0 },
     reset: true,
-    config: { duration: 120, easing: n => n * .2 },
+    config: { duration: 120, easing: (n) => n * 0.2 },
     delay,
   });
 
@@ -57,7 +56,7 @@ const GroupItem: React.FC<GroupItemProps> = ({ group, onClick, delay }) => {
       className="ease-in-out flex justify-center items-center border-b border-gray-700 hover:bg-gray-800 hover:text-gray-300 cursor-pointer transition-all duration-300 h-full"
       key={group.id}
     >
-      <p className="text-lg py-2 text-center w-full hover:text-gray-300 ease-in-out" onClick={onClick}>
+      <p className="text-lg py-2 text-center w-full hover:text-gray-300 ease-in-out">
         {group.name}
       </p>
     </animated.div>
@@ -84,14 +83,18 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const filteredGroups = groups.filter(group => group.members.includes(user.uid));
+        const filteredGroups = groups.filter((group) =>
+          group.members.includes(user.uid)
+        );
 
-        const sortedGroups = filteredGroups.sort((a, b) => a.name.localeCompare(b.name));
+        const sortedGroups = filteredGroups.sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
 
         set(sortedGroups.length);
         setUserGroups(sortedGroups);
       } catch (error) {
-        console.error('Error fetching groups:', error);
+        console.error("Error fetching groups:", error);
       } finally {
         setShowLoading(false);
       }
@@ -104,7 +107,7 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
     <div className="mb-4 w-full flex flex-col items-center rounded-2xl bg-transparent">
       <h2
         className="text-2xl italic mt-12 cursor-pointer flex items-center"
-        onClick={() => setShowMenu(show => !show)}
+        onClick={() => setShowMenu((show) => !show)}
       >
         Your Groups
         <animated.svg
@@ -115,25 +118,26 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3"
+            d="M19 9l-7 7-7-7"
+          />
         </animated.svg>
       </h2>
-      {showMenu &&
-        <p className="text-sm mb-2">
-          Explore Below:
-        </p>
-      }
+      {showMenu && <p className="text-sm mb-2">Explore Below:</p>}
       {showMenu && (
         <div className="overflow-auto h-40 w-1/2 bg-gray-800 text-white rounded-md scrollbar">
           {userGroups.length > 0 ? (
             <>
-              {userGroups.map(group => (
-                <GroupItem
-                  key={group.id}
-                  group={group}
+              {userGroups.map((group) => (
+                <div
                   onClick={() => navigate(group.id)}
-                  delay={100}
-                />
+                  className="w-full h-full"
+                >
+                  <GroupItem key={group.id} group={group} delay={100} />
+                </div>
               ))}
             </>
           ) : (
@@ -146,7 +150,9 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
                     No groups! Join or create some so they'll be shown here.
                   </p>
                   <div className="md:hidden max-sm:visible">
-                    <p className="text-center py-2 text-lg">No groups to show!</p>
+                    <p className="text-center py-2 text-lg">
+                      No groups to show!
+                    </p>
                   </div>
                 </>
               )}

@@ -68,7 +68,7 @@ const ChannelsMenu = ({ channels, id, setChannel, isEditor }: { channels: any, i
       <Select
         options={options}
         isSearchable={true}
-        placeholder="Select a channel"
+        placeholder="Channels"
         styles={darkModeStyles}
         className="rounded-r"
         onChange={(selected: any) => setChannel(selected)}

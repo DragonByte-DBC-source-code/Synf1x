@@ -1,3 +1,5 @@
+/* Your global stylesheet or within your component styles */
+
 /* For Webkit/Blink browsers (Chrome, Safari, Opera) */
 ::-webkit-scrollbar {
     width: 12px;
