@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from "react";
 import Logo from "../assets/synf1x/logo_transparent.png";
 
 import {
@@ -12,7 +11,10 @@ import {
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
 import { getGroupsSnapshot } from "../firebase/db";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
 
 const Home: React.FC<{ user: any }> = ({ user }) => {
   const [showProfile, setShowProfile] = useState(false);
@@ -28,11 +30,13 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
   const openJoin = () => setShowJoin(true);
   const closeJoin = () => setShowJoin(false);
 
+  // the function that retrieves all the groups from the database JIT based
   useEffect(() => {
     const unsubscribe: any = getGroupsSnapshot({ setGroups });
     return () => unsubscribe();
   }, []);
 
+  // title changer
   useEffect(() => {
     document.title = "Synf1x";
   }, []);

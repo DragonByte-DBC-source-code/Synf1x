@@ -8,6 +8,10 @@ interface MessageProps {
   languages: string;
 }
 
+const MiniLoader = () => (
+  <div className="animate-spin rounded-full border-t-4 border-blue-500 border-solid h-4 w-4 ml-2" />
+);
+
 const Message: FC<MessageProps> = ({
   content,
   senderPhotoURL,
@@ -17,6 +21,7 @@ const Message: FC<MessageProps> = ({
   const [translated, setTranslated] = useState<string>("");
   const [isImage, setIsImage] = useState<boolean>(false);
   const [showImagePopup, setShowImagePopup] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const translateAPI = import.meta.env.VITE_TRANSLATE_API;
 
@@ -52,6 +57,7 @@ const Message: FC<MessageProps> = ({
 
   const handleImageDoubleClick = () => {
     setShowImagePopup(!showImagePopup);
+    setIsFullscreen(true); // Set to true when double-clicked
   };
 
   return (
@@ -68,14 +74,22 @@ const Message: FC<MessageProps> = ({
             {isImage ? (
               <>
                 <div
-                  className="w-48 h-24 overflow-hidden cursor-pointer"
+                  className={`w-48 h-24 overflow-hidden cursor-pointer ${
+                    isFullscreen
+                      ? "fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-80 flex justify-center items-center overflow-y-hidden"
+                      : ""
+                  }`}
                   onDoubleClick={handleImageDoubleClick}
                 >
-                  <img
-                    src={content}
-                    alt="Image"
-                    className="w-full h-auto rounded-lg"
-                  />
+                  {content.length > 0 ? (
+                    <img
+                      src={content}
+                      alt="Image"
+                      className="w-full h-auto rounded-lg"
+                    />
+                  ) : (
+                    <MiniLoader />
+                  )}
                 </div>
                 {showImagePopup && (
                   <div className="fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-80 flex justify-center items-center overflow-y-hidden">
@@ -87,7 +101,10 @@ const Message: FC<MessageProps> = ({
                       />
                       <button
                         className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-md p-2"
-                        onClick={handleImageDoubleClick}
+                        onClick={() => {
+                          setShowImagePopup(false);
+                          setIsFullscreen(false); // Reset fullscreen state when closing
+                        }}
                       >
                         Close
                       </button>
@@ -108,7 +125,7 @@ const Message: FC<MessageProps> = ({
                 ) : (
                   <p className="text-sm flex items-center">
                     <span>Translating</span>
-                    <div className="animate-spin rounded-full border-t-4 border-blue-500 border-solid h-4 w-4 ml-2"></div>
+                    <MiniLoader />
                   </p>
                 )}
               </>

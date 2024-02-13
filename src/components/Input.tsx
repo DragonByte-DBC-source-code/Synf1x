@@ -17,6 +17,7 @@ const imageSizeProps = {
 
 const Input = ({ groupId, channel }: Props) => {
   const [message, setMessage] = useState("");
+  const [showImageUpload, setShowImageUpload] = useState(false);
   const storage = getStorage();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,9 +78,7 @@ const Input = ({ groupId, channel }: Props) => {
   };
 
   const handleUploadButtonClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+    setShowImageUpload(!showImageUpload);
   };
 
   return (
@@ -87,33 +86,49 @@ const Input = ({ groupId, channel }: Props) => {
       onSubmit={handleSubmit}
       className="flex justify-center items-center absolute bottom-4 left-0 w-full pt-12"
     >
+      <button
+        type="button"
+        className="mr-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring focus:border-blue-300"
+        onClick={handleUploadButtonClick}
+      >
+        +
+      </button>
+
       <input
         type="text"
-        className="text-center px-4 py-2 border border-gray-500 rounded-md focus:outline-none focus:border-blue-500 bg-gray-800 text-white w-1/3 max-sm:w-1/2"
+        className="text-center px-4 py-2 border border-gray-500 rounded-md focus:outline-none focus:border-blue-500 bg-gray-800 text-white w-1/3 max-sm:w-1/2 pl-10"
         placeholder="Type a message..."
         onChange={(e) => setMessage(e.target.value)}
         value={message}
       />
-      <div>
-        <div
-          className="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 cursor-pointer"
-          onClick={handleUploadButtonClick}
-        >
-          <img
-            src={UploadButton}
-            alt="Image Upload"
-            height={imageSizeProps.height}
-            width={imageSizeProps.width}
-          />
-          <input
-            type="file"
-            className="hidden"
-            accept="image/*"
-            onChange={handleImageChange}
-            ref={fileInputRef}
-          />
+
+      {showImageUpload && (
+        <div className="absolute top-0 mt-10">
+          <div
+            className="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring"
+            onClick={() => {
+              if (fileInputRef.current) {
+                fileInputRef.current.click();
+              }
+              setShowImageUpload(false);
+            }}
+          >
+            <img
+              src={UploadButton}
+              alt="Image Upload"
+              height={imageSizeProps.height}
+              width={imageSizeProps.width}
+            />
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageChange}
+              ref={fileInputRef}
+            />
+          </div>
         </div>
-      </div>
+      )}
       <button
         type="submit"
         className="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring focus:border-blue-300"

@@ -16,6 +16,12 @@ interface GroupItemProps {
   delay: number;
 }
 
+interface GroupsDisplayProps {
+  groups: Group[];
+  user: { uid: string };
+  set: any;
+}
+
 const GroupItem: React.FC<GroupItemProps> = ({ group, delay }) => {
   const [isVisible, setIsVisible] = useState(false);
   const targetRef = useRef<HTMLDivElement>(null);
@@ -31,7 +37,7 @@ const GroupItem: React.FC<GroupItemProps> = ({ group, delay }) => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        entry.isIntersecting ? setIsVisible(true) : setIsVisible(false);
+        setIsVisible(entry.isIntersecting);
       },
       {
         threshold: 0.5,
@@ -61,12 +67,6 @@ const GroupItem: React.FC<GroupItemProps> = ({ group, delay }) => {
       </p>
     </animated.div>
   );
-};
-
-type GroupsDisplayProps = {
-  groups: Group[];
-  user: { uid: string };
-  set: any;
 };
 
 const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
