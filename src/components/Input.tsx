@@ -30,6 +30,7 @@ const Input = ({ groupId, channel, listRef }: Props) => {
 
   const authUser: any = auth?.currentUser;
 
+  // have control over the screen size so the placeholder is set accordingly
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 648) {
