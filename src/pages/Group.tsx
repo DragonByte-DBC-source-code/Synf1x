@@ -200,7 +200,7 @@ const Group: FC<GroupProps> = ({ user }) => {
             )}
             <div className="flex flex-col items-center mt-[10.7rem]" id="input">
               {JSON.stringify(channel) != "{}" && (
-                <Input groupId={id ?? ""} channel={channel} />
+                <Input groupId={id ?? ""} channel={channel} listRef={listRef}/>
               )}
             </div>
           </div>

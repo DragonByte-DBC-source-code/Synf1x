@@ -1,28 +1,55 @@
-import { FormEvent, useState, useRef } from "react";
+import { FormEvent, useState, useRef, useEffect } from "react";
 import { MessageProps, createMessage } from "../firebase/db";
 import { auth } from "../firebase/firebaseConfig";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import UploadButton from "../assets/synf1x/upload_btn.png";
+import PlusButton from "../assets/synf1x/plusButton.png";
+
+import "./css/ButtonAnimations.css";
 
 interface Props {
   groupId: string;
   channel: string;
+  listRef: any;
 }
 
 const imageSizeProps = {
-  width: 25.5,
-  height: 25.5,
+  width: 25,
+  height: 25,
 };
 
-const Input = ({ groupId, channel }: Props) => {
+const Input = ({ groupId, channel, listRef }: Props) => {
   const [message, setMessage] = useState("");
   const [showImageUpload, setShowImageUpload] = useState(false);
+  const [placeholder, setPlaceholder] = useState("");
   const storage = getStorage();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const plusButtonRef = useRef(null);
 
   const authUser: any = auth?.currentUser;
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 648) {
+        setPlaceholder("Type a message...");
+      } else {
+        setPlaceholder("Type...");
+      }
+    };
+
+    // Initial check
+    handleResize();
+
+    // Listen for window resize events
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []); // Only run this effect once, on component mount
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -70,6 +97,8 @@ const Input = ({ groupId, channel }: Props) => {
           channel: channel,
         };
         await createMessage(messageDoc);
+        listRef?.current?.scrollToItem(0, "smart");
+        setShowImageUpload(false);
       } catch (error) {
         console.error("Error uploading image:", error);
         alert("Error uploading image. Please try again.");
@@ -77,8 +106,18 @@ const Input = ({ groupId, channel }: Props) => {
     }
   };
 
+  // the ugliest code I've ever written in the past 3 years
+  // it's responsible for rotating the `+` button
   const handleUploadButtonClick = () => {
     setShowImageUpload(!showImageUpload);
+    if (plusButtonRef.current) {
+      (plusButtonRef.current as HTMLElement).classList.add("rotate-90"); // Add this line
+    }
+    setTimeout(() => {
+      if (plusButtonRef.current) {
+        (plusButtonRef.current as HTMLElement).classList.remove("rotate-90"); // Add this line
+      }
+    }, 333);
   };
 
   return (
@@ -86,49 +125,63 @@ const Input = ({ groupId, channel }: Props) => {
       onSubmit={handleSubmit}
       className="flex justify-center items-center absolute bottom-4 left-0 w-full pt-12"
     >
-      <button
-        type="button"
-        className="mr-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring focus:border-blue-300"
-        onClick={handleUploadButtonClick}
-      >
-        +
-      </button>
+      <div className="flex flex-col relative">
+        <button
+          type="button"
+          className="mr-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none flex items-center"
+          onClick={handleUploadButtonClick}
+        >
+          <img
+            ref={plusButtonRef}
+            src={PlusButton}
+            height={imageSizeProps.height}
+            width={imageSizeProps.width}
+          />
+        </button>
+
+        <div className="absolute top-0 -mt-8 flex justify-center items-center w-screen">
+          <div
+            className={`${
+              showImageUpload ? "visible" : "hidden"
+            } bg-gray-600 min-w-screen flex flex-row justify-center items-center absolute -left-[50px] gap-4 rounded-md`}
+          >
+            {[1, 2, 3].map((i) => (
+              <div
+                className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring"
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
+                key={i}
+              >
+                <img
+                  src={UploadButton}
+                  alt="Image Upload"
+                  height={imageSizeProps.height}
+                  width={imageSizeProps.width}
+                />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  ref={fileInputRef}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <input
         type="text"
-        className="text-center px-4 py-2 border border-gray-500 rounded-md focus:outline-none focus:border-blue-500 bg-gray-800 text-white w-1/3 max-sm:w-1/2 pl-10"
-        placeholder="Type a message..."
+        className="text-center px-4 py-2 border border-gray-500 rounded-md focus:outline-none focus:border-blue-500 bg-gray-800 text-white md:w-1/3 max-sm:w-1/4"
+        placeholder={placeholder}
         onChange={(e) => setMessage(e.target.value)}
         value={message}
       />
 
-      {showImageUpload && (
-        <div className="absolute top-0 mt-10">
-          <div
-            className="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring"
-            onClick={() => {
-              if (fileInputRef.current) {
-                fileInputRef.current.click();
-              }
-              setShowImageUpload(false);
-            }}
-          >
-            <img
-              src={UploadButton}
-              alt="Image Upload"
-              height={imageSizeProps.height}
-              width={imageSizeProps.width}
-            />
-            <input
-              type="file"
-              className="hidden"
-              accept="image/*"
-              onChange={handleImageChange}
-              ref={fileInputRef}
-            />
-          </div>
-        </div>
-      )}
       <button
         type="submit"
         className="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring focus:border-blue-300"

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import Select from "react-select";
 import { updateGroup } from "../firebase/db";
 
@@ -55,27 +55,35 @@ const ChannelsMenu = ({ channels, id, setChannel, isEditor }: { channels: any, i
     }
   };
 
+  useEffect(() => {
+    setChannel("Main")
+  }, [])
+
   return (
     <div className="flex">
-      {isEditor && 
+      {isEditor && (
         <button
           className="bg-gray-700 text-white py-2 px-1 rounded-xl border border-r-0 border-gray-700 sm:px-3"
           onClick={() => setShowModal(true)}
         >
           +
         </button>
-      }
+      )}
       <Select
         options={options}
         isSearchable={true}
-        placeholder="Channels"
+        placeholder="Main"
         styles={darkModeStyles}
         className="rounded-r"
-        onChange={(selected: any) => setChannel(selected)}
+        onChange={(selected) => setChannel(selected)}
+        defaultValue={{ value: "Main", label: "Main" }}
       />
 
       {showModal && (
-        <form onSubmit={handleSubmit} className="fixed inset-0 z-50 flex items-center justify-center">
+        <form
+          onSubmit={handleSubmit}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+        >
           <div className="absolute inset-0 bg-black opacity-50"></div>
           <div className="bg-gray-800 p-8 rounded shadow-lg z-10">
             <h2 className="text-white text-xl mb-4">Create a new channel</h2>
