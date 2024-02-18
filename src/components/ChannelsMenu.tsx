@@ -2,12 +2,24 @@ import { FormEvent, useState, useEffect } from "react";
 import Select from "react-select";
 import { updateGroup } from "../firebase/db";
 
-const ChannelsMenu = ({ channels, id, setChannel, isEditor }: { channels: any, id: string, setChannel: any, isEditor: boolean }) => {
-  const mapChannels = (channels: any) => channels.map((ch: string) => ({ label: ch, value: ch }));
+const ChannelsMenu = ({
+  channels,
+  id,
+  setChannel,
+  isEditor,
+}: {
+  channels: any;
+  id: string;
+  setChannel: any;
+  isEditor: boolean;
+}) => {
+  const mapChannels = (channels: any) =>
+    channels.map((ch: string) => ({ label: ch, value: ch }));
 
   const [options, setOptions] = useState<any>(mapChannels(channels));
   const [showModal, setShowModal] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
+  const [value, setValue] = useState<any>("Main");
 
   const darkModeStyles: any = {
     control: (provided: any) => ({
@@ -39,11 +51,15 @@ const ChannelsMenu = ({ channels, id, setChannel, isEditor }: { channels: any, i
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (channels.indexOf(newChannelName) === -1) { // no such channel yet?
+    if (channels.indexOf(newChannelName) === -1) {
+      // no such channel yet?
       await updateGroup(id, { channels: [...channels, newChannelName] });
 
       // Update options using the functional form of setOptions
-      setOptions((prevOptions: any) => [...prevOptions, { label: newChannelName, value: newChannelName }]);
+      setOptions((prevOptions: any) => [
+        ...prevOptions,
+        { label: newChannelName, value: newChannelName },
+      ]);
 
       // Reset the input and close the modal
       setNewChannelName("");
@@ -51,13 +67,19 @@ const ChannelsMenu = ({ channels, id, setChannel, isEditor }: { channels: any, i
     } else {
       setShowModal(false);
       setNewChannelName("");
-      alert("Can't create 2 cahnnels with the same name!")
+      alert("Can't create 2 cahnnels with the same name!");
     }
   };
 
   useEffect(() => {
-    setChannel("Main")
-  }, [])
+    const lastChannel = localStorage.getItem("lastChannel");
+    const setter = {
+      value: lastChannel,
+      label: lastChannel,
+    };
+    setChannel(setter);
+    setValue(setter);
+  }, []);
 
   return (
     <div className="flex">
@@ -69,14 +91,19 @@ const ChannelsMenu = ({ channels, id, setChannel, isEditor }: { channels: any, i
           +
         </button>
       )}
+
       <Select
         options={options}
         isSearchable={true}
-        placeholder="Main"
+        placeholder={value}
         styles={darkModeStyles}
         className="rounded-r"
-        onChange={(selected) => setChannel(selected)}
-        defaultValue={{ value: "Main", label: "Main" }}
+        onChange={(selected: any) => {
+          setValue(selected); // Update the value state with the selected channel
+          setChannel(selected);
+          localStorage.setItem("lastChannel", selected.value);
+        }}
+        value={value}
       />
 
       {showModal && (

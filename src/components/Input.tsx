@@ -3,9 +3,15 @@ import { MessageProps, createMessage } from "../firebase/db";
 import { auth } from "../firebase/firebaseConfig";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+// Regular images
 import UploadButton from "../assets/synf1x/upload_btn.png";
 import PlusButton from "../assets/synf1x/plusButton.png";
+import StickerButton from "../assets/synf1x/stickerButton.png";
 
+/* Michael Fucking Richards */
+import MichaelRichards from "../assets/MichaelRichards/MichaelRichards.png";
+
+// css imports
 import "./css/ButtonAnimations.css";
 
 interface Props {
@@ -30,7 +36,12 @@ const Input = ({ groupId, channel, listRef }: Props) => {
 
   const authUser: any = auth?.currentUser;
 
-  // have control over the screen size so the placeholder is set accordingly
+  const buttons = [
+    UploadButton,
+    MichaelRichards,
+    StickerButton
+  ]
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 648) {
@@ -157,7 +168,7 @@ const Input = ({ groupId, channel, listRef }: Props) => {
                 key={i}
               >
                 <img
-                  src={UploadButton}
+                  src={buttons[i - 1]}
                   alt="Image Upload"
                   height={imageSizeProps.height}
                   width={imageSizeProps.width}

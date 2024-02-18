@@ -37,7 +37,7 @@ const Group: FC<GroupProps> = ({ user }) => {
 
   const [groupData, setGroupData] = useState<any | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
-  const [channel, setChannel] = useState<any>({});
+  const [channel, setChannel] = useState<any>({ value: "Main", label: "Main" });
   const listRef = useRef<FixedSizeList | null>(null);
 
   useEffect(() => {
@@ -114,7 +114,7 @@ const Group: FC<GroupProps> = ({ user }) => {
 
     return (
       <div style={style} className={`pt-8 flex ${messageContainerClass}`}>
-        {isCurrentUser && <div className="flex-grow" />}
+        {!isCurrentUser && <div className="flex-grow" />}
         <Message
           key={message.id}
           content={message.content}
@@ -123,7 +123,7 @@ const Group: FC<GroupProps> = ({ user }) => {
           channel={channel.label}
           languages={navigator.language}
         />
-        <div className="absolute max-sm:py-8" />
+        <div className="absolute max-sm:py-8 md:p-0" />
       </div>
     );
   };
