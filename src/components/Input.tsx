@@ -25,7 +25,7 @@ const imageSizeProps = {
   height: 25,
 };
 
-const Input = ({ groupId, channel, listRef }: Props) => {
+const Input = ({ groupId, channel }: Props) => {
   const [message, setMessage] = useState("");
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [placeholder, setPlaceholder] = useState("");
@@ -109,7 +109,6 @@ const Input = ({ groupId, channel, listRef }: Props) => {
           channel: channel,
         };
         await createMessage(messageDoc);
-        listRef?.current?.scrollToItem(0, "smart");
         setShowImageUpload(false);
       } catch (error) {
         console.error("Error uploading image:", error);
@@ -157,7 +156,7 @@ const Input = ({ groupId, channel, listRef }: Props) => {
               showImageUpload ? "visible" : "hidden"
             } bg-gray-600 min-w-screen flex flex-row justify-center items-center absolute -left-[50px] gap-4 rounded-md`}
           >
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map((i: number) => (
               <div
                 className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring"
                 onClick={() => {

@@ -67,19 +67,21 @@ const ChannelsMenu = ({
     } else {
       setShowModal(false);
       setNewChannelName("");
-      alert("Can't create 2 cahnnels with the same name!");
+      alert("Can't create 2 channels with the same name!");
     }
   };
 
   useEffect(() => {
-    const lastChannel = localStorage.getItem("lastChannel");
+    // Retrieve the last channel for the specific group from localStorage
+    const lastChannelKey = `lastChannel_${id}`;
+    const lastChannel = localStorage.getItem(lastChannelKey) || "Main";
     const setter = {
       value: lastChannel,
       label: lastChannel,
     };
     setChannel(setter);
     setValue(setter);
-  }, []);
+  }, [id]);
 
   return (
     <div className="flex">
@@ -101,7 +103,8 @@ const ChannelsMenu = ({
         onChange={(selected: any) => {
           setValue(selected); // Update the value state with the selected channel
           setChannel(selected);
-          localStorage.setItem("lastChannel", selected.value);
+          const lastChannelKey = `lastChannel_${id}`;
+          localStorage.setItem(lastChannelKey, selected.value);
         }}
         value={value}
       />
