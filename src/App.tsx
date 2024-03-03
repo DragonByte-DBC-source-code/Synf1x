@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Signup, Home, Loading, Group } from "./pages";
+import { Signup, Home, Loading, Group, UpgradeBenefits } from "./pages";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { Route, Routes, useNavigate, useLocation } from "react-router-dom";
 
@@ -13,6 +13,8 @@ const App = () => {
     home: "/",
     signup: "/signup",
     group: (id: string) => `/${id}`,
+    upgrade: "/upgrade",
+    checkout: "/checkout",
   };
 
   useEffect(() => {
@@ -28,8 +30,14 @@ const App = () => {
       } else if (location.pathname === routes.signup) {
         navigate(routes.home);
       } else if (
-        !location.pathname.startsWith(routes.group("")) &&
-        !(location.pathname in routes)
+        !Object.values(routes).some(route => {
+          if (typeof route === 'function') {
+            // Handle dynamic routes
+            return location.pathname.startsWith(route(""));
+          } else {
+            return location.pathname === route;
+          }
+        })
       ) {
         navigate(routes.home);
       }
@@ -47,6 +55,7 @@ const App = () => {
           <Route path={routes.home} element={<Home user={user} />} />
           <Route path={routes.signup} element={<Signup />} />
           <Route path={routes.group(":id")} element={<Group user={user} />} />
+          <Route path={routes.upgrade} element={<UpgradeBenefits />} />
         </Routes>
       )}
     </>

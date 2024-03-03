@@ -2,7 +2,7 @@ import React, { useEffect, FC, useState, useRef } from "react";
 import { getGroup, exitGroup } from "../firebase/db";
 import { useParams, useNavigate } from "react-router-dom";
 
-import { Loading, Input, ChannelsMenu, Message } from "../components";
+import { Loading, Input, ChannelsMenu, Message, ArrowIcon } from "../components";
 import { getMessageSnaphot } from "../firebase/db";
 import { FixedSizeList } from "react-window";
 
@@ -12,23 +12,6 @@ type GroupProps = {
   user: any;
 };
 
-// Arrow SVG component
-const ArrowIcon: FC = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    className="w-6 h-6"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      d="M15 19l-7-7 7-7"
-    />
-  </svg>
-);
 
 const Group: FC<GroupProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();

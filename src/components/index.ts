@@ -6,6 +6,7 @@ import Loading from "./Loading";
 import Input from "./Input";
 import ChannelsMenu from "./ChannelsMenu";
 import Message from "./Message";
+import ArrowIcon from "./Arrow";
 
 export {
     Profile,
@@ -16,4 +17,5 @@ export {
     Input,
     ChannelsMenu,
     Message,
+    ArrowIcon,
 }

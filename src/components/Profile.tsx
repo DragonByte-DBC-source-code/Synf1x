@@ -2,15 +2,21 @@ import React from "react";
 import { updateProfile } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useNavigate } from "react-router-dom";
 
 const Profile = ({ user, close }: { user: any; close: () => void }) => {
   const [newName, setNewName] = React.useState(user.displayName || "");
-  const [previousName, setPreviousName] = React.useState<string | null>(user.displayName || "");
+  const [previousName, setPreviousName] = React.useState<string | null>(
+    user.displayName || ""
+  );
   const [newImageFile, setNewImageFile] = React.useState<File | null>(null);
-  const [newImageUrl, setNewImageUrl] = React.useState<string | null>(user.photoURL);
+  const [newImageUrl, setNewImageUrl] = React.useState<string | null>(
+    user.photoURL
+  );
   const [updateError, setUpdateError] = React.useState<string | null>(null);
 
   const storage = getStorage();
+  const navigate = useNavigate();
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value: string = e.target.value;
@@ -22,38 +28,41 @@ const Profile = ({ user, close }: { user: any; close: () => void }) => {
     const file = e.target.files && e.target.files[0];
     if (file) {
       setNewImageFile(file);
-  
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setNewImageUrl(reader.result as string);
       };
-  
+
       reader.readAsDataURL(file);
     }
-  };  
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     if (auth.currentUser) {
       try {
         if (newImageFile) {
           // Upload the image to Firebase Storage
-          const storageRef = ref(storage, `profile_images/${auth.currentUser.uid}/${newImageFile.name}`);
+          const storageRef = ref(
+            storage,
+            `profile_images/${auth.currentUser.uid}/${newImageFile.name}`
+          );
           await uploadBytes(storageRef, newImageFile);
-  
+
           // Get the download URL of the uploaded image
           const imageURL = await getDownloadURL(storageRef);
-  
+
           // Update the user's profile with the new image URL
           await updateProfile(auth.currentUser, { photoURL: imageURL });
         }
-  
+
         if (newName.trim() !== "" && newName !== previousName) {
           // Update the user's profile with the new display name
           await updateProfile(auth.currentUser, { displayName: newName });
         }
-  
+
         // Close the form and reset state
         close();
         setUpdateError(null);
@@ -66,7 +75,7 @@ const Profile = ({ user, close }: { user: any; close: () => void }) => {
       }
     }
   };
-  
+
   return (
     <form onSubmit={handleUpdateProfile}>
       <div className="h-full w-full bg-gray-900 text-white p-4 flex flex-col justify-center items-center gap-4">
@@ -79,20 +88,44 @@ const Profile = ({ user, close }: { user: any; close: () => void }) => {
         />
         <label className="block text-sm font-medium text-gray-400 mt-4">
           Change Image:
-          <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+          <input
+            type="file"
+            className="hidden"
+            accept="image/*"
+            onChange={handleImageChange}
+          />
           <div className="mt-4 w-full">
             <label className="bg-indigo-600 text-white px-4 py-2 rounded cursor-pointer hover-bg-indigo-700">
               Browse
-              <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
             </label>
           </div>
         </label>
         <div className="flex justify-center align-center w-full h-full">
           {newImageFile && newImageUrl && (
-            <img src={newImageUrl} alt="New Profile" className="my-4" style={{ maxWidth: "100px", maxHeight: '100px' }} />
+            <img
+              src={newImageUrl}
+              alt="New Profile"
+              className="my-4"
+              style={{ maxWidth: "100px", maxHeight: "100px" }}
+            />
           )}
         </div>
-        <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded hover-bg-indigo-700">
+        <button
+          onClick={() => navigate("/upgrade")}
+          className="bg-indigo-600 text-white px-4 py-2 rounded hover-bg-indigo-700"
+        >
+          Upgrade Plan
+        </button>
+        <button
+          type="submit"
+          className="bg-indigo-600 text-white px-4 py-2 rounded hover-bg-indigo-700"
+        >
           Update Profile
         </button>
         {updateError && <div className="text-red-500 mt-4">{updateError}</div>}

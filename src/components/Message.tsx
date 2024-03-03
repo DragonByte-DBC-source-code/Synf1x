@@ -92,7 +92,7 @@ const Message: FC<MessageProps> = ({
                   )}
                 </div>
                 {showImagePopup && (
-                  <div className="fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-80 flex justify-center items-center overflow-y-hidden">
+                  <div className="fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-80 flex justify-center items-center">
                     <div className="max-w-screen-lg w-full mx-4">
                       <img
                         src={content}

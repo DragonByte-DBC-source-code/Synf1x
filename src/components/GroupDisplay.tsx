@@ -135,6 +135,7 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
                 <div
                   onClick={() => navigate(group.id)}
                   className="w-full h-full"
+                  key={group.id}
                 >
                   <GroupItem key={group.id} group={group} delay={100} />
                 </div>
@@ -149,6 +150,7 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
                   <p className="text-center py-2 text-lg max-sm:hidden">
                     No groups! Join or create some so they'll be shown here.
                   </p>
+                  {/* The message for small screens */}
                   <div className="md:hidden max-sm:visible">
                     <p className="text-center py-2 text-lg">
                       No groups to show!

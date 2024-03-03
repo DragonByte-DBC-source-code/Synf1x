@@ -50,7 +50,7 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
               <img
                 src={user.photoURL}
                 alt="User"
-                className="h-8 w-8 rounded-full"
+                className="size-8 rounded-full cursor-pointer"
                 onClick={() => setShowProfile((state) => !state)}
               />
               <h1 className="text-3xl font-semibold max-sm:hidden pl-2">

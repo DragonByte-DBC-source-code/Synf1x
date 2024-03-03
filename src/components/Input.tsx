@@ -40,7 +40,7 @@ const Input = ({ groupId, channel }: Props) => {
     UploadButton,
     MichaelRichards,
     StickerButton
-  ]
+  ];
 
   useEffect(() => {
     const handleResize = () => {
@@ -62,6 +62,8 @@ const Input = ({ groupId, channel }: Props) => {
       window.removeEventListener("resize", handleResize);
     };
   }, []); // Only run this effect once, on component mount
+
+  const item = (n: number) => n - 1; // indexes and stuff smh
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -122,11 +124,11 @@ const Input = ({ groupId, channel }: Props) => {
   const handleUploadButtonClick = () => {
     setShowImageUpload(!showImageUpload);
     if (plusButtonRef.current) {
-      (plusButtonRef.current as HTMLElement).classList.add("rotate-90"); // Add this line
+      (plusButtonRef.current as HTMLElement).classList.add("rotate-90");
     }
     setTimeout(() => {
       if (plusButtonRef.current) {
-        (plusButtonRef.current as HTMLElement).classList.remove("rotate-90"); // Add this line
+        (plusButtonRef.current as HTMLElement).classList.remove("rotate-90"); 
       }
     }, 333);
   };
@@ -152,35 +154,47 @@ const Input = ({ groupId, channel }: Props) => {
 
         <div className="absolute top-0 -mt-8 flex justify-center items-center w-screen">
           <div
-            className={`${
-              showImageUpload ? "visible" : "hidden"
-            } bg-gray-600 min-w-screen flex flex-row justify-center items-center absolute -left-[50px] gap-4 rounded-md`}
+            className={`${showImageUpload ? "visible" : "hidden"
+              } bg-gray-600 min-w-screen flex flex-row justify-center items-center absolute -left-[50px] gap-4 rounded-md`}
           >
-            {[1, 2, 3].map((i: number) => (
-              <div
-                className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring"
-                onClick={() => {
-                  if (fileInputRef.current) {
-                    fileInputRef.current.click();
-                  }
-                }}
-                key={i}
-              >
-                <img
-                  src={buttons[i - 1]}
-                  alt="Image Upload"
-                  height={imageSizeProps.height}
-                  width={imageSizeProps.width}
-                />
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  ref={fileInputRef}
-                />
-              </div>
-            ))}
+            <div
+              className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring"
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.click();
+                }
+              }}
+            >
+              <img
+                src={buttons[item(1)]}
+                alt="Image Upload"
+                height={imageSizeProps.height}
+                width={imageSizeProps.width}
+              />
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageChange}
+                ref={fileInputRef}
+              />
+            </div>
+            <div className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring flex flex-row">
+              <img
+                src={buttons[item(2)]}
+                alt="Image Upload"
+                height={imageSizeProps.height}
+                width={imageSizeProps.width}
+              />
+            </div>
+            <div className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring flex flex-row">
+              <img
+                src={buttons[item(3)]}
+                alt="Image Upload"
+                height={imageSizeProps.height}
+                width={imageSizeProps.width}
+              />
+            </div>
           </div>
         </div>
       </div>
