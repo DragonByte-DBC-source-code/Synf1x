@@ -15,7 +15,6 @@ import { getGroupsSnapshot } from "../firebase/db";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-
 const Home: React.FC<{ user: any }> = ({ user }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
@@ -50,7 +49,7 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
               <img
                 src={user.photoURL}
                 alt="User"
-                className="size-8 rounded-full cursor-pointer"
+                className="rounded-full cursor-pointer w-9 h-9 mt-1"
                 onClick={() => setShowProfile((state) => !state)}
               />
               <h1 className="text-3xl font-semibold max-sm:hidden pl-2">

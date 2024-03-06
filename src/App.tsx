@@ -8,6 +8,7 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const [proAlertShown, setProAlertShown] = useState(false); // Flag to track if the alert has been shown
 
   const routes = {
     home: "/",
@@ -16,6 +17,8 @@ const App = () => {
     upgrade: "/upgrade",
     checkout: "/checkout",
   };
+
+  const month = 2629746000; // Number of milliseconds in a month
 
   useEffect(() => {
     const auth = getAuth();
@@ -30,8 +33,8 @@ const App = () => {
       } else if (location.pathname === routes.signup) {
         navigate(routes.home);
       } else if (
-        !Object.values(routes).some(route => {
-          if (typeof route === 'function') {
+        !Object.values(routes).some((route) => {
+          if (typeof route === "function") {
             // Handle dynamic routes
             return location.pathname.startsWith(route(""));
           } else {
@@ -43,8 +46,29 @@ const App = () => {
       }
     });
 
-    return () => unsubscribe(); // Cleanup function
+    // Check "pro" status on app mount
+    checkProStatus();
+
+    // Set interval to check "pro" status and reset it after a month
+    const intervalId = setInterval(checkProStatus, month);
+
+    // Cleanup function
+    return () => {
+      clearInterval(intervalId);
+      unsubscribe();
+    };
   }, [navigate, location, routes]);
+
+  // Function to check "pro" status and perform redirection if necessary
+  const checkProStatus = () => {
+    if (localStorage.getItem("isPro") === "true" && !proAlertShown) {
+      setProAlertShown(true); // Set the flag to true after showing the alert
+      if (location.pathname === routes.upgrade) {
+        navigate(routes.home);
+        alert("Already on pro plan!");
+      }
+    }
+  };
 
   return (
     <>

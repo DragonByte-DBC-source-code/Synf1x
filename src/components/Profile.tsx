@@ -4,6 +4,8 @@ import { auth } from "../firebase/firebaseConfig";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useNavigate } from "react-router-dom";
 
+import "./css/gradient.css";
+
 const Profile = ({ user, close }: { user: any; close: () => void }) => {
   const [newName, setNewName] = React.useState(user.displayName || "");
   const [previousName, setPreviousName] = React.useState<string | null>(
@@ -95,7 +97,7 @@ const Profile = ({ user, close }: { user: any; close: () => void }) => {
             onChange={handleImageChange}
           />
           <div className="mt-4 w-full">
-            <label className="bg-indigo-600 text-white px-4 py-2 rounded cursor-pointer hover-bg-indigo-700">
+            <label className="bg-indigo-600 text-white px-4 py-2 rounded cursor-pointer hover:bg-indigo-700">
               Browse
               <input
                 type="file"
@@ -116,15 +118,20 @@ const Profile = ({ user, close }: { user: any; close: () => void }) => {
             />
           )}
         </div>
-        <button
-          onClick={() => navigate("/upgrade")}
-          className="bg-indigo-600 text-white px-4 py-2 rounded hover-bg-indigo-700"
-        >
-          Upgrade Plan
-        </button>
+        {localStorage.getItem("isPro") !== "true" && (
+          <div
+            onClick={() => {
+              navigate("/upgrade");
+              localStorage.setItem("showPayPal", "false");
+            }}
+            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 cursor-pointer"
+          >
+            <p className="gradient-text-btn">Upgrade Plan</p>
+          </div>
+        )}
         <button
           type="submit"
-          className="bg-indigo-600 text-white px-4 py-2 rounded hover-bg-indigo-700"
+          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
         >
           Update Profile
         </button>

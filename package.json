@@ -11,6 +11,7 @@
     "deploy": "firebase deploy"
   },
   "dependencies": {
+    "@paypal/react-paypal-js": "^8.1.4",
     "autoprefixer": "^10.4.16",
     "firebase": "^10.5.2",
     "postcss": "^8.4.31",

@@ -7,6 +7,7 @@ import Input from "./Input";
 import ChannelsMenu from "./ChannelsMenu";
 import Message from "./Message";
 import ArrowIcon from "./Arrow";
+import PayPalComponent from "./Paypal";
 
 export {
     Profile,
@@ -18,4 +19,5 @@ export {
     ChannelsMenu,
     Message,
     ArrowIcon,
+    PayPalComponent
 }

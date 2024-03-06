@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Loading from "./Loading";
 import { useSpring, animated } from "react-spring";
@@ -13,7 +13,6 @@ type Group = {
 
 interface GroupItemProps {
   group: Group;
-  delay: number;
 }
 
 interface GroupsDisplayProps {
@@ -22,50 +21,16 @@ interface GroupsDisplayProps {
   set: any;
 }
 
-const GroupItem: React.FC<GroupItemProps> = ({ group, delay }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const targetRef = useRef<HTMLDivElement>(null);
-
-  const props = useSpring({
-    opacity: isVisible ? 1 : 0,
-    from: { opacity: 0 },
-    reset: true,
-    config: { duration: 120, easing: (n) => n * 0.2 },
-    delay,
-  });
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      {
-        threshold: 0.5,
-      }
-    );
-
-    if (targetRef.current) {
-      observer.observe(targetRef.current);
-    }
-
-    return () => {
-      if (targetRef.current) {
-        observer.unobserve(targetRef.current);
-      }
-    };
-  }, []);
-
+const GroupItem: React.FC<GroupItemProps> = ({ group }) => {
   return (
-    <animated.div
-      ref={targetRef}
-      style={props}
+    <div
       className="ease-in-out flex justify-center items-center border-b border-gray-700 hover:bg-gray-800 hover:text-gray-300 cursor-pointer transition-all duration-300 h-full"
       key={group.id}
     >
       <p className="text-lg py-2 text-center w-full hover:text-gray-300 ease-in-out">
         {group.name}
       </p>
-    </animated.div>
+    </div>
   );
 };
 
@@ -137,7 +102,7 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
                   className="w-full h-full"
                   key={group.id}
                 >
-                  <GroupItem key={group.id} group={group} delay={100} />
+                  <GroupItem key={group.id} group={group} />
                 </div>
               ))}
             </>

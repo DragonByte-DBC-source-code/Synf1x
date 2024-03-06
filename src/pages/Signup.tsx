@@ -1,7 +1,11 @@
-import { GoogleAuthProvider, GithubAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '../firebase/firebaseConfig';
-import Logo from '../assets/synf1x/logo_transparent.png';
-import { useEffect } from 'react';
+import {
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig";
+import Logo from "../assets/synf1x/logo_transparent.png";
+import { useEffect } from "react";
 
 interface AuthButtonProps {
   onClick: () => void;
@@ -26,7 +30,11 @@ const AuthButton: React.FC<AuthButtonProps> = ({
   >
     <div className="flex items-center">
       <img src={logo} alt={`${text} Logo`} className="w-6 h-6" />
-      <p className={`text-sm font-bold break-words ml-2 ${textColor === 'white' ? 'text-black' : ''}`}>
+      <p
+        className={`text-sm font-bold break-words ml-2 ${
+          textColor === "text-white" ? "text-white" : "text-black"
+        }`}
+      >
         {text}
       </p>
     </div>
@@ -34,12 +42,15 @@ const AuthButton: React.FC<AuthButtonProps> = ({
 );
 
 const Signup: React.FC = () => {
-
   const googleLogin = async () => {
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: "select_account",
+      });
+      await signInWithPopup(auth, provider);
     } catch (error) {
-      console.error('Error signing in with Google:', error);
+      console.error("Error signing in with Google:", error);
     }
   };
 
@@ -52,7 +63,7 @@ const Signup: React.FC = () => {
   };
 
   useEffect(() => {
-    document.title = 'Signup | Synf1x';
+    document.title = "Signup | Synf1x";
   }, []);
 
   return (
@@ -67,7 +78,7 @@ const Signup: React.FC = () => {
             </span>
           </h2>
         </div>
-        <div className='md:hidden max-sm:visible'>
+        <div className="md:hidden max-sm:visible">
           <br />
           <br />
         </div>

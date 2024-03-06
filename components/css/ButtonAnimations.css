@@ -1,4 +1,0 @@
-.rotate-90 {
-  transform: rotate(90deg);
-  transition: transform 0.1s ease-out; /* Add transition for smooth animation */
-}
