@@ -75,9 +75,7 @@ const Message: FC<MessageProps> = ({
               <>
                 <div
                   className={`w-48 h-24 overflow-hidden cursor-pointer ${
-                    isFullscreen
-                      ? "fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-80 flex justify-center items-center overflow-y-hidden"
-                      : ""
+                    isFullscreen ? "absolute bg-black bg-opacity-80" : ""
                   }`}
                   onDoubleClick={handleImageDoubleClick}
                 >
@@ -123,10 +121,10 @@ const Message: FC<MessageProps> = ({
                 {translated.length > 0 ? (
                   <p className="text-lg">{translated}</p>
                 ) : (
-                  <p className="text-sm flex items-center">
+                  <div className="text-sm flex items-center">
                     <span>Translating</span>
                     <MiniLoader />
-                  </p>
+                  </div>
                 )}
               </>
             )}

@@ -1,8 +1,26 @@
 /* Define the rotating text effect */
 .gradient-text-btn {
   --bg-size: 400%;
-  --color-one: hsl(27, 63%, 46%);
-  --color-two: hsl(49, 64%, 44%);
+  --color-one: hsl(172, 100%, 50%);
+  --color-two: hsl(210, 95%, 61%);
+  background: linear-gradient(
+      45deg,
+      var(--color-one),
+      var(--color-two),
+      var(--color-one)
+    )
+    0 0 / var(--bg-size) 100%;
+  color: transparent;
+  background-clip: text;
+
+  /* Apply animation for the rotating effect */
+  animation: rotate-bg 8s linear infinite;
+}
+
+i {
+  --bg-size: 400%;
+  --color-one: hsl(229, 44%, 50%);
+  --color-two: hsl(210, 95%, 61%);
   background: linear-gradient(
       45deg,
       var(--color-one),
@@ -26,7 +44,7 @@
 
 /* Optionally, if you want to reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
-  .gradient-text {
+  .gradient-text-btn, i {
     animation: none; /* Disable animations for reduced motion */
   }
 }
