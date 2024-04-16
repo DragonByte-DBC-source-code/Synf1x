@@ -27,7 +27,7 @@ const GroupItem: React.FC<GroupItemProps> = ({ group }) => {
       className="ease-in-out flex justify-center items-center border-b border-gray-700 hover:bg-gray-800 hover:text-gray-300 cursor-pointer transition-all duration-300 h-full"
       key={group.id}
     >
-      <p className="text-lg py-2 text-center w-full hover:text-gray-300 ease-in-out">
+      <p className="text-2xl py-2 text-center w-full hover:text-gray-300 ease-in-out">
         {group.name}
       </p>
     </div>
@@ -98,7 +98,7 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
             <>
               {userGroups.map((group) => (
                 <div
-                  onClick={() => navigate(group.id)}
+                  onClick={() => navigate(`/groups/${group.id}`)}
                   className="w-full h-full"
                   key={group.id}
                 >

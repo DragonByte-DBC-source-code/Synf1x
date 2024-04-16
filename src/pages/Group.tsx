@@ -84,6 +84,14 @@ const Group: FC<GroupProps> = ({ user }) => {
     }
   };
 
+  //destreoy the image in local storage
+  useEffect(() => { 
+    const image = localStorage.getItem('image');
+    if (image) {
+      localStorage.removeItem('image');
+    }
+  }, [])
+
   // Function to render each individual message
   const MessageItem: FC<{ index: number; style: React.CSSProperties }> = ({
     index,

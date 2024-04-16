@@ -29,7 +29,7 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
   const openJoin = () => setShowJoin(true);
   const closeJoin = () => setShowJoin(false);
 
-  // the function that retrieves all the groups from the database JIT based
+  // the function that retrieves all the groups from the database, JIT based
   useEffect(() => {
     const unsubscribe: any = getGroupsSnapshot({ setGroups });
     return () => unsubscribe();

@@ -1,5 +1,7 @@
 import { FC, useState, useEffect } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 interface MessageProps {
   senderName: string;
   senderPhotoURL: string;
@@ -22,6 +24,8 @@ const Message: FC<MessageProps> = ({
   const [isImage, setIsImage] = useState<boolean>(false);
   const [showImagePopup, setShowImagePopup] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  const navigate = useNavigate();
 
   const translateAPI = import.meta.env.VITE_TRANSLATE_API;
 
@@ -55,11 +59,6 @@ const Message: FC<MessageProps> = ({
     }
   }, [content]);
 
-  const handleImageDoubleClick = () => {
-    setShowImagePopup(!showImagePopup);
-    setIsFullscreen(true); // Set to true when double-clicked
-  };
-
   return (
     <>
       {channel && (
@@ -77,7 +76,10 @@ const Message: FC<MessageProps> = ({
                   className={`w-48 h-24 overflow-hidden cursor-pointer ${
                     isFullscreen ? "absolute bg-black bg-opacity-80" : ""
                   }`}
-                  onDoubleClick={handleImageDoubleClick}
+                  onDoubleClick={() => {
+                    localStorage.setItem('image', content)
+                    navigate(`/image`);
+                  }}
                 >
                   {content.length > 0 ? (
                     <img

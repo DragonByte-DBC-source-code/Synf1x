@@ -52,7 +52,7 @@ const Buttons: React.FC = () => {
 
 const Text: React.FC = () => (
   <p
-    className={`text-5xl font-bold break-words ml-2 text-white bottom-[60%] absolute`}
+    className="text-5xl font-bold break-words ml-2 text-white bottom-[60%] absolute"
   >
     Upgrade with <i>Paypal</i>
     <div className="my-4" />

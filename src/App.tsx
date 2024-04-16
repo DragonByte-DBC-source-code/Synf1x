@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Signup, Home, Loading, Group, UpgradeBenefits } from "./pages";
+import { Signup, Home, Loading, Group, UpgradeBenefits, ImageDisplay } from "./pages";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { Route, Routes, useNavigate, useLocation } from "react-router-dom";
 
@@ -13,7 +13,8 @@ const App = () => {
   const routes = {
     home: "/",
     signup: "/signup",
-    group: (id: string) => `/${id}`,
+    group: (id: string) => `/groups/${id}`,
+    image: "/image",
     upgrade: "/upgrade",
     checkout: "/checkout",
   };
@@ -79,6 +80,7 @@ const App = () => {
           <Route path={routes.home} element={<Home user={user} />} />
           <Route path={routes.signup} element={<Signup />} />
           <Route path={routes.group(":id")} element={<Group user={user} />} />
+          <Route path={routes.image} element={<ImageDisplay />} />
           <Route path={routes.upgrade} element={<UpgradeBenefits />} />
         </Routes>
       )}
