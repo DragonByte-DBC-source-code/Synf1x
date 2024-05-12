@@ -62,7 +62,8 @@ const App = () => {
 
   // Function to check "pro" status and perform redirection if necessary
   const checkProStatus = () => {
-    if (localStorage.getItem("isPro") === "true" && !proAlertShown) {
+    const proUsers: any = []
+    if (localStorage.getItem("isPro") === "true" && !proAlertShown && proUsers.includes(user)) {
       setProAlertShown(true); // Set the flag to true after showing the alert
       if (location.pathname === routes.upgrade) {
         navigate(routes.home);

@@ -36,11 +36,15 @@ const Input = ({ groupId, channel }: Props) => {
 
   const authUser: any = auth?.currentUser;
 
-  const buttons = [
-    UploadButton,
-    MichaelRichards,
-    StickerButton
-  ];
+  const buttons = [UploadButton, MichaelRichards, StickerButton];
+
+  const record = () => {
+    alert("Record");
+  };
+
+  const stickerUpload = () => {
+    alert("Sticker Upload");
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -124,13 +128,10 @@ const Input = ({ groupId, channel }: Props) => {
   const handleUploadButtonClick = () => {
     setShowImageUpload(!showImageUpload);
     if (plusButtonRef.current) {
-      (plusButtonRef.current as HTMLElement).classList.add("rotate-90");
+      const pb = plusButtonRef.current as HTMLElement;
+      pb.classList.toggle("rotate-90", !showImageUpload);
+      pb.classList.toggle("-rotate-90", showImageUpload);
     }
-    setTimeout(() => {
-      if (plusButtonRef.current) {
-        (plusButtonRef.current as HTMLElement).classList.remove("rotate-90"); 
-      }
-    }, 333);
   };
 
   return (
@@ -154,8 +155,9 @@ const Input = ({ groupId, channel }: Props) => {
 
         <div className="absolute top-0 -mt-8 flex justify-center items-center w-screen">
           <div
-            className={`${showImageUpload ? "visible" : "hidden"
-              } bg-gray-600 min-w-screen flex flex-row justify-center items-center absolute -left-[50px] gap-4 rounded-md`}
+            className={`${
+              showImageUpload ? "visible" : "hidden"
+            } bg-gray-600 min-w-screen flex flex-row justify-center items-center absolute -left-[50px] gap-4 rounded-md`}
           >
             <div
               className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring"
@@ -179,18 +181,24 @@ const Input = ({ groupId, channel }: Props) => {
                 ref={fileInputRef}
               />
             </div>
-            <div className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring flex flex-row">
+            <div
+              className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring flex flex-row"
+              onClick={record}
+            >
               <img
                 src={buttons[item(2)]}
-                alt="Image Upload"
+                alt="Record a Voice Message"
                 height={imageSizeProps.height}
                 width={imageSizeProps.width}
               />
             </div>
-            <div className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring flex flex-row">
+            <div
+              className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring flex flex-row"
+              onClick={stickerUpload}
+            >
               <img
                 src={buttons[item(3)]}
-                alt="Image Upload"
+                alt="Sticker Upload"
                 height={imageSizeProps.height}
                 width={imageSizeProps.width}
               />
@@ -203,8 +211,16 @@ const Input = ({ groupId, channel }: Props) => {
         type="text"
         className="text-center px-4 py-2 border border-gray-500 rounded-md focus:outline-none focus:border-blue-500 bg-gray-800 text-white md:w-1/3 max-sm:w-1/4"
         placeholder={placeholder}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={(e) => {
+          setMessage(e.target.value);
+          if (e.target.value.endsWith("@")) {
+            const user = localStorage.getItem("pingedUser");
+            localStorage.removeItem("pingedUser");
+            setMessage((m) => m + (user ? user : ""));
+          }
+        }}
         value={message}
+        id = "inpt"
       />
 
       <button

@@ -69,7 +69,18 @@ const Message: FC<MessageProps> = ({
             className="w-12 h-12 rounded-full"
           />
           <div className="flex flex-col pb-4">
-            <p className="font-bold text-lg">{senderName}</p>
+            <p
+              className="font-bold text-lg cursor-pointer"
+              onClick={() => {
+                localStorage.setItem("pingedUser", senderName);
+                const input = document.getElementById("inpt") as HTMLInputElement;
+                if (input) {
+                  input.value += `@${senderName}`;
+                }else alert("Please enter");
+               }}
+            >
+              {senderName}
+            </p>
             {isImage ? (
               <>
                 <div
@@ -77,7 +88,7 @@ const Message: FC<MessageProps> = ({
                     isFullscreen ? "absolute bg-black bg-opacity-80" : ""
                   }`}
                   onDoubleClick={() => {
-                    localStorage.setItem('image', content)
+                    localStorage.setItem("image", content);
                     navigate(`/image`);
                   }}
                 >
