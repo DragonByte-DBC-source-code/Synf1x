@@ -29,7 +29,8 @@ const Group: FC<GroupProps> = ({ user }) => {
         if (cleanedId) {
           const data: any = await getGroup({ id: cleanedId });
           if (!data.members.includes(user.uid)) {
-            return navigate("/");
+            navigate("/");
+            return;
           }
           setGroupData(data);
           document.title = `Group - ${data.name}`;

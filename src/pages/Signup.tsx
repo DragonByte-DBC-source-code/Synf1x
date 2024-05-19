@@ -5,6 +5,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
 import Logo from "../assets/synf1x/logo_transparent.png";
+import Jahel from "../assets/synf1x/Jahel.jpg";
 import { useEffect } from "react";
 
 interface AuthButtonProps {
@@ -67,10 +68,16 @@ const Signup: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-black min-h-screen flex flex-col justify-center items-center">
-      <div className="bg-gray-800 text-white p-8 rounded-lg shadow-lg text-center w-1/2 max-sm:w-[96%] max-sm:h-[48%] max-sm:px-4">
-        <div className="flex flex-col items-center justify-center max-sm:w-full">
-          <img src={Logo} alt="Logo" className="w-1/2 max-sm:w-full" />
+    <div
+      className="bg-black min-h-screen flex flex-col justify-center items-center"
+      style={{
+        backgroundImage: `url(${Jahel})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <div className="bg-black text-white p-8 rounded-lg text-left">
+        <div className="flex flex-col items-left justify-left max-sm:w-full">
           <h2 className="text-3xl font-bold break-words">
             Sign Up to
             <span className="bg-gradient-to-b from-blue-200 to-silver-500 text-transparent bg-clip-text p-2 rounded">
@@ -83,7 +90,7 @@ const Signup: React.FC = () => {
           <br />
         </div>
         <br />
-        <div className="flex flex-row justify-center space-x-4">
+        <div className="flex flex-row justify-left space-x-4">
           <AuthButton
             onClick={googleLogin}
             logo={import.meta.env.VITE_GOOGLE_LOGO}
