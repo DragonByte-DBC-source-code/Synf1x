@@ -4,7 +4,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
-import Logo from "../assets/synf1x/logo_transparent.png";
+import Logo from "../assets/synf1x/jahelPro.png";
 import Jahel from "../assets/synf1x/Jahel.jpg";
 import { useEffect } from "react";
 
@@ -76,9 +76,12 @@ const Signup: React.FC = () => {
         backgroundPosition: "center",
       }}
     >
-      <div className="bg-black text-white p-8 rounded-lg text-left">
-        <div className="flex flex-col items-left justify-left max-sm:w-full">
-          <h2 className="text-3xl font-bold break-words">
+      <div className="absolute left-[11rem] bottom-[22rem]">
+      <img src={Logo} />
+      </div>
+      <div className=" p-4 text-white rounded-lg text-right absolute left-[6rem] bottom-[14rem]">
+        <div className="flex flex-col items-right justify-right max-sm:w-full">
+          <h2 className="text-4xl font-bold break-words">
             Sign Up to
             <span className="bg-gradient-to-b from-blue-200 to-silver-500 text-transparent bg-clip-text p-2 rounded">
               Synf1x
@@ -90,7 +93,7 @@ const Signup: React.FC = () => {
           <br />
         </div>
         <br />
-        <div className="flex flex-row justify-left space-x-4">
+        <div className="flex flex-row justify-center space-x-4">
           <AuthButton
             onClick={googleLogin}
             logo={import.meta.env.VITE_GOOGLE_LOGO}
