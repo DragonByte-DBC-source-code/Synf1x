@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
-import { Signup, Home, Loading, Group, UpgradeBenefits, ImageDisplay } from "./pages";
+import {
+  Signup,
+  Home,
+  Loading,
+  Group,
+  UpgradeBenefits,
+  ImageDisplay,
+} from "./pages";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { Route, Routes, useNavigate, useLocation } from "react-router-dom";
 
 const App = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,8 +69,12 @@ const App = () => {
 
   // Function to check "pro" status and perform redirection if necessary
   const checkProStatus = () => {
-    const proUsers: any = []
-    if (localStorage.getItem("isPro") === "true" && !proAlertShown && proUsers.includes(user)) {
+    const proUsers: any = [];
+    if (
+      localStorage.getItem("isPro") === "true" &&
+      !proAlertShown &&
+      proUsers.includes(user)
+    ) {
       setProAlertShown(true); // Set the flag to true after showing the alert
       if (location.pathname === routes.upgrade) {
         navigate(routes.home);

@@ -3,9 +3,9 @@ import {
   GithubAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
-import { auth } from "../firebase/firebaseConfig";
-import Logo from "../assets/synf1x/jahelPro.png";
-import Jahel from "../assets/synf1x/Jahel.jpg";
+import { auth } from "../firebase/config";
+import Logo from "../assets/un1speak/jahelPro.png";
+import Jahel from "../assets/un1speak/Jahel.jpg";
 import { useEffect } from "react";
 
 interface AuthButtonProps {
@@ -64,7 +64,7 @@ const Signup: React.FC = () => {
   };
 
   useEffect(() => {
-    document.title = "Signup | Synf1x";
+    document.title = "Un1Speak | Sign Up";
   }, []);
 
   return (
@@ -77,14 +77,14 @@ const Signup: React.FC = () => {
       }}
     >
       <div className="absolute left-[11rem] bottom-[22rem]">
-      <img src={Logo} />
+        <img src={Logo} />
       </div>
       <div className=" p-4 text-white rounded-lg text-right absolute left-[6rem] bottom-[14rem]">
         <div className="flex flex-col items-right justify-right max-sm:w-full">
           <h2 className="text-4xl font-bold break-words">
             Sign Up to
             <span className="bg-gradient-to-b from-blue-200 to-silver-500 text-transparent bg-clip-text p-2 rounded">
-              Synf1x
+              un1speak
             </span>
           </h2>
         </div>

@@ -1,6 +1,6 @@
 import React from "react";
 import { updateProfile } from "firebase/auth";
-import { auth } from "../firebase/firebaseConfig";
+import { auth } from "../firebase/config";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useNavigate } from "react-router-dom";
 

@@ -1,4 +1,4 @@
-import { db } from "./firebaseConfig";
+import { db } from "./config";
 import {
   collection,
   addDoc,
@@ -31,7 +31,7 @@ export const createGroup = async ({
       editor: cleanedMembers[0],
     };
     const group = await addDoc(collection(db, "groups"), groupData);
-    window.location.replace(group.id);
+    window.location.replace(`/groups/${group.id}`);
   } catch (e: any) {
     alert("Error creating group: " + e.message);
   }
@@ -43,6 +43,7 @@ export type MessageProps = {
   content: string;
   groupId: string;
   channel: string;
+  senderId: string | undefined;
 };
 
 export const createMessage = async (message: MessageProps) => {

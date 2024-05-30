@@ -1,4 +1,4 @@
-import Logo from "../assets/synf1x/logo_transparent.png";
+import Logo from "../assets/un1speak/jahelPro.png";
 
 import {
   Profile,
@@ -9,7 +9,7 @@ import {
 } from "../components";
 
 import { signOut } from "firebase/auth";
-import { auth } from "../firebase/firebaseConfig";
+import { auth } from "../firebase/config";
 import { getGroupsSnapshot } from "../firebase/db";
 
 import { useState, useEffect } from "react";
@@ -33,16 +33,16 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
   useEffect(() => {
     const unsubscribe: any = getGroupsSnapshot({ setGroups });
     return () => unsubscribe();
-  }, []);
+  }, [setGroups]); // Add any other dependencies here if needed
 
   // title changer
   useEffect(() => {
-    document.title = "Synf1x";
+    document.title = "Un1Speak | Home";
   }, []);
 
   return (
     <>
-      {groups.length > 0 ? (
+      {groups.length >= 0 ? (
         <div className="flex flex-col min-h-screen bg-gray-800 text-white">
           <header className="bg-gray-800 p-4 flex justify-between items-center py-4">
             <div className="flex items-center gap-2">

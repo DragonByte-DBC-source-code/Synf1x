@@ -12,7 +12,7 @@ export default function UpgradeBenefits() {
   ];
 
   const defaults: Array<string> = [
-    "4 groups to join/create",
+    "2 groups to join/create",
     "Access to the regular translating model: Synf1xation",
     "Standard translation times"
   ];

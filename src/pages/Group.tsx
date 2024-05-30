@@ -6,7 +6,7 @@ import { Loading, Input, ChannelsMenu, Message, ArrowIcon } from "../components"
 import { getMessageSnaphot } from "../firebase/db";
 import { FixedSizeList } from "react-window";
 
-import { auth } from "../firebase/firebaseConfig";
+import { auth } from "../firebase/config";
 
 type GroupProps = {
   user: any;
@@ -99,14 +99,14 @@ const Group: FC<GroupProps> = ({ user }) => {
     style,
   }) => {
     const message: any = messages[index];
-    const isCurrentUser = message.senderName === auth.currentUser?.displayName; // Check if the message was sent by the current user
+    const isCurrentUser = message.senderId === auth.currentUser?.uid; // Check if the message was sent by the current user
 
     // Define a CSS class to align messages to the right if sent by the current user
     const messageContainerClass = isCurrentUser ? "self-end" : "self-start";
 
     return (
       <div style={style} className={`pt-8 flex ${messageContainerClass}`}>
-        {!isCurrentUser && <div className="flex-grow" />}
+        {isCurrentUser && <div className="flex-grow" />}
         <Message
           key={message.id}
           content={message.content}

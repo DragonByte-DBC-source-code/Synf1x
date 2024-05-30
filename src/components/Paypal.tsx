@@ -51,12 +51,12 @@ const Buttons: React.FC = () => {
 };
 
 const Text: React.FC = () => (
-  <p
+  <div
     className="text-5xl font-bold break-words ml-2 text-white bottom-[60%] absolute"
   >
     Upgrade with <i>Paypal</i>
     <div className="my-4" />
-  </p>
+  </div>
 );
 
 const PayPalComponent: React.FC = () => {
@@ -70,13 +70,15 @@ const PayPalComponent: React.FC = () => {
       <PayPalScriptProvider options={opts}>
         <Text />
         <Buttons />
-        <div className="bg-gray-800 h-7 w-full bottom-[43%] absolute text-center text-transparent z-[100]" />
       </PayPalScriptProvider>
       {/*No rings for the buttons*/}
       <style>
         {`
         div:focus, iframe:focus {
             outline: none;
+        },
+        * {
+          color: white;
         }
         `}
       </style>
