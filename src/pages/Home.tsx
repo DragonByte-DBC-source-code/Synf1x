@@ -1,4 +1,4 @@
-import Logo from "../assets/un1speak/jahelPro.png";
+import Logo from "../assets/synf1x/jahelPro.png";
 
 import {
   Profile,
@@ -37,7 +37,7 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
 
   // title changer
   useEffect(() => {
-    document.title = "Un1Speak | Home";
+    document.title = "Synf1x | Home";
   }, []);
 
   return (
@@ -95,18 +95,14 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
                 Join a Group
               </button>
             </div>
-            <GroupsDisplay user={user} groups={groups} set={setGroupsAmount} />
-          </main>
-
-          <footer className="sm:hidden xs:hidden md:hidden lg:block">
-            <div className="flex items-center justify-center">
-              <img
-                src={Logo}
-                alt="Logo"
-                className="h-36 w-36 fixed -bottom-8"
+            <div className="flex justify-center items-center w-3/4">
+              <GroupsDisplay
+                user={user}
+                groups={groups}
+                set={setGroupsAmount}
               />
             </div>
-          </footer>
+          </main>
 
           {showProfile && (
             <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50">
@@ -124,7 +120,12 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
           {showJoin && (
             <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50">
               <div className="bg-gray-900 p-4 rounded-lg w-3/4 flex flex-col items-center">
-                <JoinGroup canJoin={groupsAmount <= 2} set={setGroupsAmount} />
+                <JoinGroup
+                  canJoin={
+                    groupsAmount < 2 || localStorage.getItem("isPro") == "true"
+                  }
+                  set={setGroupsAmount}
+                />
                 <button
                   className="bg-gray-700 text-white py-2 px-4 rounded-lg mt-4 md:w-1/5 max-sm:w-auto"
                   onClick={closeJoin}
@@ -143,7 +144,9 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
                   groups={groups.filter((group: any) =>
                     group.members.includes(user.uid)
                   )}
-                  canCreate={groupsAmount <= 2}
+                  canCreate={
+                    groupsAmount < 2 || localStorage.getItem("isPro") == "true"
+                  }
                 />
                 <button
                   className="bg-gray-700 text-white py-2 px-4 rounded-lg mt-4 md:w-1/5 max-sm:w-auto"

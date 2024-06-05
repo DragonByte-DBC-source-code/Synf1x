@@ -4,6 +4,8 @@ import { auth } from "../firebase/config";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useNavigate } from "react-router-dom";
 
+import { updateMessageSenderInfo } from "../firebase/db";
+
 import "./css/gradient.css";
 
 const Profile = ({ user, close }: { user: any; close: () => void }) => {
@@ -75,6 +77,7 @@ const Profile = ({ user, close }: { user: any; close: () => void }) => {
         console.error("Error updating profile: ", error);
         setUpdateError("An error occurred while updating the profile.");
       }
+      updateMessageSenderInfo(auth.currentUser.uid, auth.currentUser.displayName, auth.currentUser.photoURL);
     }
   };
 

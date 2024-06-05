@@ -8,7 +8,21 @@ import {
   updateDoc,
   serverTimestamp,
   arrayRemove,
+  query,
+  where,
+  getDocs
 } from "firebase/firestore";
+
+
+// also needed somewhere else so we'll export it
+export type MessageProps = {
+  senderName: string;
+  senderPhotoURL: string;
+  content: string;
+  groupId: string;
+  channel: string;
+  senderId: string | undefined;  //actually? always defined. Only authorized users can send messages  
+};
 
 export const createGroup = async ({
   channels,
@@ -35,15 +49,6 @@ export const createGroup = async ({
   } catch (e: any) {
     alert("Error creating group: " + e.message);
   }
-};
-
-export type MessageProps = {
-  senderName: string;
-  senderPhotoURL: string;
-  content: string;
-  groupId: string;
-  channel: string;
-  senderId: string | undefined;
 };
 
 export const createMessage = async (message: MessageProps) => {
@@ -152,4 +157,41 @@ export const exitGroup = async (groupId: string, userId: string) => {
   });
 
   alert(`Successfully exited the group ${groupName}`);
+};
+
+export const updateMessageSenderInfo = async (
+  userId: string,
+  senderName: string | null, // always set though because I've denied any null options for this prop way earlier in development
+  senderPhotoURL: string | null,
+) => {
+  try {
+    // Query messages sent by the user
+    const messagesQuery = query(
+      collection(db, "messages"),
+      where("senderId", "==", userId)
+    );
+    const querySnapshot = await getDocs(messagesQuery);
+
+    // Iterate over each message
+    querySnapshot.forEach(async (doc) => {
+      try {
+        // Update sender information for each message
+        if (senderPhotoURL != null) {
+          await updateDoc(doc.ref, {
+            senderName: senderName,
+            senderPhotoURL: senderPhotoURL,
+          });
+        } else {
+          await updateDoc(doc.ref, {
+            senderName: senderName,
+          });
+        }
+      } catch (error) {
+        console.error("Error updating message:", error);
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+    throw error;
+  }
 };

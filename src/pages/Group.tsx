@@ -200,6 +200,9 @@ const Group: FC<GroupProps> = ({ user }) => {
       ) : (
         <Loading />
       )}
+      <style>
+        {`body{overflow:hidden}`}
+      </style>
     </div>
   );
 };

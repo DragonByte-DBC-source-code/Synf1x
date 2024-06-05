@@ -4,9 +4,9 @@ import { auth } from "../firebase/config";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // Regular images
-import UploadButton from "../assets/un1speak/upload_btn.png";
-import PlusButton from "../assets/un1speak/plusButton.png";
-import StickerButton from "../assets/un1speak/stickerButton.png";
+import UploadButton from "../assets/synf1x/upload_btn.png";
+import PlusButton from "../assets/synf1x/plusButton.png";
+import StickerButton from "../assets/synf1x/stickerButton.png";
 
 /* Michael Fucking Richards */
 import MichaelRichards from "../assets/MichaelRichards/MichaelRichards.png";

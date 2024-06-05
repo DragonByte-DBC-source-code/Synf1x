@@ -4,8 +4,8 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { auth } from "../firebase/config";
-import Logo from "../assets/un1speak/jahelPro.png";
-import Jahel from "../assets/un1speak/Jahel.jpg";
+import Logo from "../assets/synf1x/jahelPro.png";
+import Jahel from "../assets/synf1x/Jahel.jpg";
 import { useEffect } from "react";
 
 interface AuthButtonProps {
@@ -64,7 +64,7 @@ const Signup: React.FC = () => {
   };
 
   useEffect(() => {
-    document.title = "Un1Speak | Sign Up";
+    document.title = " | Sign Up";
   }, []);
 
   return (
@@ -76,16 +76,12 @@ const Signup: React.FC = () => {
         backgroundPosition: "center",
       }}
     >
-      <div className="absolute left-[11rem] bottom-[22rem]">
-        <img src={Logo} />
-      </div>
       <div className=" p-4 text-white rounded-lg text-right absolute left-[6rem] bottom-[14rem]">
         <div className="flex flex-col items-right justify-right max-sm:w-full">
           <h2 className="text-4xl font-bold break-words">
-            Sign Up to
-            <span className="bg-gradient-to-b from-blue-200 to-silver-500 text-transparent bg-clip-text p-2 rounded">
-              un1speak
-            </span>
+            <div className="flex flex-row justify-center items-center gap-4">
+              Sign Up to {' '} <img src={Logo} className="w-48 h-22" />
+            </div>
           </h2>
         </div>
         <div className="md:hidden max-sm:visible">
