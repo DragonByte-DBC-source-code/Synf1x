@@ -64,7 +64,7 @@ const Signup: React.FC = () => {
   };
 
   useEffect(() => {
-    document.title = " | Sign Up";
+    document.title = "Synf1x | Sign Up";
   }, []);
 
   return (
