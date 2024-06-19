@@ -19,5 +19,5 @@ export {
     ChannelsMenu,
     Message,
     ArrowIcon,
-    PayPalComponent
+    PayPalComponent,
 }

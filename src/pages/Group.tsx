@@ -1,4 +1,4 @@
-import React, { useEffect, FC, useState, useRef } from "react";
+import { useEffect, FC, useState, useRef, memo } from "react";
 import { getGroup, exitGroup } from "../firebase/db";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -94,10 +94,7 @@ const Group: FC<GroupProps> = ({ user }) => {
   }, [])
 
   // Function to render each individual message
-  const MessageItem: FC<{ index: number; style: React.CSSProperties }> = ({
-    index,
-    style,
-  }) => {
+  const MessageItem: FC<{ index: number; style: React.CSSProperties }> = memo(({ index, style }) => {
     const message: any = messages[index];
     const isCurrentUser = message.senderId === auth.currentUser?.uid; // Check if the message was sent by the current user
 
@@ -118,7 +115,8 @@ const Group: FC<GroupProps> = ({ user }) => {
         <div className="absolute max-sm:py-8 md:p-0" />
       </div>
     );
-  };
+  }
+);
 
   const exit = async () => {
     try {

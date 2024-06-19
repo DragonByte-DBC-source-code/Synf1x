@@ -174,6 +174,7 @@ const Input = ({ groupId, channel }: Props) => {
                 alt="Image Upload"
                 height={imageSizeProps.height}
                 width={imageSizeProps.width}
+                className="cursor-pointer"
               />
               <input
                 type="file"
@@ -192,6 +193,7 @@ const Input = ({ groupId, channel }: Props) => {
                 alt="Record a Voice Message"
                 height={imageSizeProps.height}
                 width={imageSizeProps.width}
+                className="cursor-pointer"
               />
             </div>
             <div
@@ -203,6 +205,7 @@ const Input = ({ groupId, channel }: Props) => {
                 alt="Sticker Upload"
                 height={imageSizeProps.height}
                 width={imageSizeProps.width}
+                className="cursor-pointer"
               />
             </div>
           </div>
