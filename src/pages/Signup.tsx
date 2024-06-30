@@ -76,14 +76,17 @@ const Signup: React.FC = () => {
         backgroundPosition: "center",
       }}
     >
-      <div className="md:p-4 text-white md:rounded-lg md:text-right md:absolute md:left-[6rem] md:bottom-[14rem] max-sm:p-2 max-sm:bg-gradient-to-r from-black to-white max-sm:bg-opacity-50 max-sm:rounded-lg
-      ">
+      <div className=" p-4 text-white rounded-lg text-right absolute left-[6rem] bottom-[14rem]">
         <div className="flex flex-col items-right justify-right max-sm:w-full">
           <h2 className="text-4xl font-bold break-words">
-            <div className="flex flex-row justify-center items-center gap-4 max-sm:text-2xl ">
-              Sign Up to {' '} <img src={Logo} className="md: w-48 h-22 max-sm:w-28 max-sm:h-7" />
+            <div className="flex flex-row justify-center items-center gap-4">
+              Sign Up to {' '} <img src={Logo} className="w-48 h-22" />
             </div>
           </h2>
+        </div>
+        <div className="md:hidden max-sm:visible">
+          <br />
+          <br />
         </div>
         <br />
         <div className="flex flex-row justify-center space-x-4">
