@@ -1,0 +1,19 @@
+.backdrop {
+  backdrop-filter: blur(8px); /* Adjust the blur intensity as needed */
+}
+
+.image-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 999; /* Ensure the image appears above other content */
+}
+
+.image {
+  max-width: calc(50vw - 40px); /* Set maximum width to viewport width minus 40px for margin */
+  min-height: calc(65vh - 40px); /* Set maximum height to viewport height minus 40px for margin */
+  border-radius: 8px; /* Add border radius to match the rounded-lg class */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+  opacity: 1; /* Ensure full opacity */
+}
