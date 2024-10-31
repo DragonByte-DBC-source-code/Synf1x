@@ -1,16 +1,17 @@
 import { db } from "./config";
+
 import {
   collection,
+  doc,
   addDoc,
   getDoc,
-  doc,
-  onSnapshot,
+  getDocs,
   updateDoc,
-  serverTimestamp,
   arrayRemove,
+  onSnapshot,
   query,
   where,
-  getDocs
+  serverTimestamp,
 } from "firebase/firestore";
 
 
@@ -44,7 +45,9 @@ export const createGroup = async ({
       channels: channels,
       editor: cleanedMembers[0],
     };
+
     const group = await addDoc(collection(db, "groups"), groupData);
+    
     window.location.replace(`/groups/${group.id}`);
   } catch (e: any) {
     alert("Error creating group: " + e.message);

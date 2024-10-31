@@ -83,6 +83,23 @@ const App = () => {
     }
   };
 
+  const isProController = () => {
+    /*
+
+    TO DO: 
+
+    Will fetch a server.
+    If a user is included in the list the server sends,
+    then the isPro controller in the localStorage will be set to `true`.
+    Else, we'll just delete the property from localStorage.
+    Hence, the server will be the indicator of who's an actual pro member,
+    and who ain't.
+    */
+    
+    // Just a placeholder, will be removed later on when we build the function.
+    return isProController();
+  }
+
   return (
     <>
       {loading ? (

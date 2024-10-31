@@ -24,6 +24,7 @@ const Message: FC<MessageProps> = ({
   const [isImage, setIsImage] = useState<boolean>(false);
   const [showImagePopup, setShowImagePopup] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isTranslated, setIsTranslated] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
@@ -55,7 +56,10 @@ const Message: FC<MessageProps> = ({
           console.error("Error during translation:", error);
         }
       };
-      fetchTranslate();
+      if (!isTranslated) {
+        fetchTranslate();
+        setIsTranslated(true);
+      }
     }
   }, [content]);
 
@@ -69,18 +73,7 @@ const Message: FC<MessageProps> = ({
             className="w-12 h-12 rounded-full"
           />
           <div className="flex flex-col pb-4">
-            <p
-              className="font-bold text-lg cursor-pointer"
-              onClick={() => {
-                localStorage.setItem("pingedUser", senderName);
-                const input = document.getElementById("inpt") as HTMLInputElement;
-                if (input) {
-                  input.value += `@${senderName}`;
-                }else alert("Please enter");
-               }}
-            >
-              {senderName}
-            </p>
+            <p className="font-bold text-lg">{senderName}</p>
             {isImage ? (
               <>
                 <div

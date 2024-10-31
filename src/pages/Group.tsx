@@ -2,7 +2,13 @@ import { useEffect, FC, useState, useRef, memo } from "react";
 import { getGroup, exitGroup } from "../firebase/db";
 import { useParams, useNavigate } from "react-router-dom";
 
-import { Loading, Input, ChannelsMenu, Message, ArrowIcon } from "../components";
+import {
+  Loading,
+  Input,
+  ChannelsMenu,
+  Message,
+  ArrowIcon,
+} from "../components";
 import { getMessageSnaphot } from "../firebase/db";
 import { FixedSizeList } from "react-window";
 
@@ -11,7 +17,6 @@ import { auth } from "../firebase/config";
 type GroupProps = {
   user: any;
 };
-
 
 const Group: FC<GroupProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
@@ -46,23 +51,24 @@ const Group: FC<GroupProps> = ({ user }) => {
   }, [cleanedId]);
 
   useEffect(() => {
-    const unsubscribe: any = getMessageSnaphot({
+    const unsubscribe = getMessageSnaphot({
       setMessages: (newMessages: any) => {
-        // Filter messages for the selected channel and groupId
         const filteredMessages = newMessages.filter(
           (message: any) =>
             message.channel.label === channel.label && message.groupId === id
         );
-        // Sort the filtered messages by timestamp
         const sortedMessages = filteredMessages
           .slice()
-          .sort((a: any, b: any) => {
-            if (a.timestamp && b.timestamp) {
-              return a.timestamp.toMillis() - b.timestamp.toMillis();
-            }
-            return 0;
-          });
-        setMessages(sortedMessages);
+          .sort((a: any, b: any) =>
+            a.timestamp && b.timestamp
+              ? a.timestamp.toMillis() - b.timestamp.toMillis()
+              : 0
+          );
+
+        // Only update state if the new messages differ from the current messages
+        if (JSON.stringify(sortedMessages) !== JSON.stringify(messages)) {
+          setMessages(sortedMessages);
+        }
       },
     });
 
@@ -86,37 +92,38 @@ const Group: FC<GroupProps> = ({ user }) => {
   };
 
   //destreoy the image in local storage
-  useEffect(() => { 
-    const image = localStorage.getItem('image');
+  useEffect(() => {
+    const image = localStorage.getItem("image");
     if (image) {
-      localStorage.removeItem('image');
+      localStorage.removeItem("image");
     }
-  }, [])
+  }, []);
 
   // Function to render each individual message
-  const MessageItem: FC<{ index: number; style: React.CSSProperties }> = memo(({ index, style }) => {
-    const message: any = messages[index];
-    const isCurrentUser = message.senderId === auth.currentUser?.uid; // Check if the message was sent by the current user
+  const MessageItem: FC<{ index: number; style: React.CSSProperties }> = memo(
+    ({ index, style }) => {
+      const message: any = messages[index];
+      const isCurrentUser = message.senderId === auth.currentUser?.uid; // Check if the message was sent by the current user
 
-    // Define a CSS class to align messages to the right if sent by the current user
-    const messageContainerClass = isCurrentUser ? "self-end" : "self-start";
+      // Define a CSS class to align messages to the right if sent by the current user
+      const messageContainerClass = isCurrentUser ? "self-end" : "self-start";
 
-    return (
-      <div style={style} className={`pt-8 flex ${messageContainerClass}`}>
-        {isCurrentUser && <div className="flex-grow" />}
-        <Message
-          key={message.id}
-          content={message.content}
-          senderPhotoURL={message.senderPhotoURL}
-          senderName={message.senderName}
-          channel={channel.label}
-          languages={navigator.language}
-        />
-        <div className="absolute max-sm:py-8 md:p-0" />
-      </div>
-    );
-  }
-);
+      return (
+        <div style={style} className={`pt-8 flex ${messageContainerClass}`}>
+          {isCurrentUser && <div className="flex-grow" />}
+          <Message
+            key={message.id}
+            content={message.content}
+            senderPhotoURL={message.senderPhotoURL}
+            senderName={message.senderName}
+            channel={channel.label}
+            languages={navigator.language}
+          />
+          <div className="absolute max-sm:py-8 md:p-0" />
+        </div>
+      );
+    }
+  );
 
   const exit = async () => {
     try {
@@ -190,7 +197,7 @@ const Group: FC<GroupProps> = ({ user }) => {
             )}
             <div className="flex flex-col items-center mt-[10.7rem]" id="input">
               {JSON.stringify(channel) != "{}" && (
-                <Input groupId={id ?? ""} channel={channel} listRef={listRef}/>
+                <Input groupId={id ?? ""} channel={channel} listRef={listRef} />
               )}
             </div>
           </div>
@@ -198,9 +205,7 @@ const Group: FC<GroupProps> = ({ user }) => {
       ) : (
         <Loading />
       )}
-      <style>
-        {`body{overflow:hidden}`}
-      </style>
+      <style>{`body{overflow:hidden}`}</style>
     </div>
   );
 };

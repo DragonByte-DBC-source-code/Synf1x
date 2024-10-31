@@ -72,24 +72,30 @@ const Input = ({ groupId, channel }: Props) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (message.trim() !== "") {
-      try {
-        // Create a message with the text content
-        const messageDoc: MessageProps = {
-          content: message.substring(0, 400),
-          senderPhotoURL: authUser?.photoURL,
-          senderName: authUser?.displayName,
-          groupId: groupId,
-          channel: channel,
-          senderId: auth?.currentUser?.uid,
-        };
-        await createMessage(messageDoc);
-        // Clear the message input
-        setMessage("");
-      } catch (error) {
-        console.error("Error sending message:", error);
-        alert("Error sending message. Please try again.");
-      }
+    // Trim message to avoid sending empty messages
+    const trimmedMessage = message.trim();
+
+    if (trimmedMessage === "") {
+      // If the message is empty, simply return
+      return;
+    }
+
+    try {
+      // Create a message with the text content
+      const messageDoc: MessageProps = {
+        content: trimmedMessage.substring(0, 400), // Limit content length to 400 characters
+        senderPhotoURL: authUser?.photoURL,
+        senderName: authUser?.displayName,
+        groupId: groupId,
+        channel: channel,
+        senderId: auth?.currentUser?.uid,
+      };
+
+      await createMessage(messageDoc); // Send the message
+      setMessage(""); // Clear the message input
+    } catch (error) {
+      console.error("Error sending message:", error);
+      alert("Error sending message. Please try again.");
     }
   };
 
