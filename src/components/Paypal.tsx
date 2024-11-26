@@ -27,9 +27,11 @@ const Buttons: React.FC = () => {
     localStorage.removeItem("showPayPal");
     return actions.order.capture();
   };
+
   const onError = (err: any): void => {
     console.error("Payment error:", err.message);
   };
+  
   return (
     <div className="flex justify-center items-center h-screen bg-gray-800 ring-0">
       {isPending ? (
