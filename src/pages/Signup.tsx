@@ -76,7 +76,7 @@ const Signup: React.FC = () => {
         backgroundPosition: "center",
       }}
     >
-      <div className=" p-4 text-white rounded-lg text-right absolute left-[6rem] bottom-[14rem]">
+      <div className=" p-4 text-white rounded-lg text-right absolute left-[6rem]">
         <div className="flex flex-col items-right justify-right max-sm:w-full">
           <h2 className="text-4xl font-bold break-words">
             <div className="flex flex-row justify-center items-center gap-4">
