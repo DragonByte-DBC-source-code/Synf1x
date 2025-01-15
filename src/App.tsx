@@ -83,7 +83,7 @@ const App = () => {
     }
   };
 
-  const isProController = () => {
+  const isProController: any = () => {
     /*
 
     TO DO: 

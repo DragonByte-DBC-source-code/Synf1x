@@ -39,8 +39,51 @@ const Input = ({ groupId, channel }: Props) => {
   const buttons = [UploadButton, MichaelRichards, StickerButton];
 
   const record = () => {
-    alert("Record");
+    // Check if the browser supports the SpeechRecognition API
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Speech Recognition is not supported in this browser.");
+      return;
+    }
+
+    // Create a new instance of SpeechRecognition
+    const recognition = new SpeechRecognition();
+
+    // Set the language (this will match the device's language)
+    recognition.lang = navigator.language; // e.g., 'en-US' for English
+
+    // Set continuous mode to allow continuous speech recognition
+    recognition.continuous = false;
+
+    // Start recognition
+    recognition.start();
+
+    recognition.onstart = () => {
+      console.log("Voice recognition started...");
+    };
+
+    recognition.onresult = (event: any) => {
+      // Get the transcribed text from the recognition result
+      const spokenText = event.results[0][0].transcript;
+
+      // Set the message state to the transcribed text
+      setMessage(spokenText);
+    };
+
+    recognition.onerror = (event: any) => {
+      // Handle errors
+      console.error("Error occurred in speech recognition:", event.error);
+      alert("Error occurred in speech recognition.");
+    };
+
+    recognition.onend = () => {
+      console.log("Voice recognition ended.");
+    };
   };
+
 
   const stickerUpload = () => {
     alert("Sticker Upload");
@@ -224,11 +267,6 @@ const Input = ({ groupId, channel }: Props) => {
         placeholder={placeholder}
         onChange={(e) => {
           setMessage(e.target.value);
-          if (e.target.value.endsWith("@")) {
-            const user = localStorage.getItem("pingedUser");
-            localStorage.removeItem("pingedUser");
-            setMessage((m) => m + (user ? user : ""));
-          }
         }}
         value={message}
         id="inpt"
