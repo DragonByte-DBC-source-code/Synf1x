@@ -20,9 +20,11 @@ export type MessageProps = {
   senderName: string;
   senderPhotoURL: string;
   content: string;
+  languages: string | undefined;
   groupId: string;
   channel: string;
   senderId: string | undefined;  //actually? always defined. Only authorized users can send messages  
+  type: "text" | "image" | "audio"
 };
 
 export const createGroup = async ({

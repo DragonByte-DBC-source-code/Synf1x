@@ -29,6 +29,9 @@ const Input = ({ groupId, channel }: Props) => {
   const [message, setMessage] = useState("");
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [placeholder, setPlaceholder] = useState("");
+
+  const  [isSpeech, setIsSpeech] = useState<boolean>(false);
+
   const storage = getStorage();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +65,7 @@ const Input = ({ groupId, channel }: Props) => {
     recognition.start();
 
     recognition.onstart = () => {
-      console.log("Voice recognition started...");
+      console.log('Start recognition...');
     };
 
     recognition.onresult = (event: any) => {
@@ -71,6 +74,7 @@ const Input = ({ groupId, channel }: Props) => {
 
       // Set the message state to the transcribed text
       setMessage(spokenText);
+      setIsSpeech(true);
     };
 
     recognition.onerror = (event: any) => {
@@ -132,10 +136,13 @@ const Input = ({ groupId, channel }: Props) => {
         groupId: groupId,
         channel: channel,
         senderId: auth?.currentUser?.uid,
+        type: isSpeech ? 'audio' : 'text',
+        languages: navigator.language,
       };
 
       await createMessage(messageDoc); // Send the message
       setMessage(""); // Clear the message input
+      setIsSpeech(false);
     } catch (error) {
       console.error("Error sending message:", error);
       alert("Error sending message. Please try again.");
@@ -164,6 +171,8 @@ const Input = ({ groupId, channel }: Props) => {
           groupId: groupId,
           channel: channel,
           senderId: auth?.currentUser?.uid,
+          type: "image",
+          languages: navigator.language,
         };
         await createMessage(messageDoc);
         setShowImageUpload(false);

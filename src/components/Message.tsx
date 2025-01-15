@@ -1,14 +1,6 @@
 import { FC, useState, useEffect } from "react";
-
 import { useNavigate } from "react-router-dom";
-
-interface MessageProps {
-  senderName: string;
-  senderPhotoURL: string;
-  content: string;
-  channel: string;
-  languages: string;
-}
+import { MessageProps } from "../firebase/db";
 
 const MiniLoader = () => (
   <div className="animate-spin rounded-full border-t-4 border-blue-500 border-solid h-4 w-4 ml-2" />
@@ -18,7 +10,9 @@ const Message: FC<MessageProps> = ({
   content,
   senderPhotoURL,
   senderName,
+  languages,
   channel,
+  type,
 }) => {
   const [translated, setTranslated] = useState<string>("");
   const [isImage, setIsImage] = useState<boolean>(false);
@@ -31,7 +25,7 @@ const Message: FC<MessageProps> = ({
   const translateAPI = import.meta.env.VITE_TRANSLATE_API;
 
   useEffect(() => {
-    if (content.startsWith(import.meta.env.VITE_IMAGE_PREFIX)) {
+    if (type === "image") {
       setIsImage(true);
     } else {
       const fetchTranslate = async () => {
@@ -43,7 +37,7 @@ const Message: FC<MessageProps> = ({
             },
             body: JSON.stringify({
               content: content,
-              language: String(navigator.language).split("-")[0],
+              language: String(languages).split("-")[0],
             }),
           });
 
@@ -62,6 +56,13 @@ const Message: FC<MessageProps> = ({
       }
     }
   }, [content]);
+
+  const handleReadAloud = () => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(translated); // no point in reading the original text. Read the translation :)
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   return (
     <>
@@ -123,16 +124,27 @@ const Message: FC<MessageProps> = ({
                 )}
               </>
             ) : (
-              <>
-                {translated.length > 0 ? (
-                  <p className="text-lg">{translated}</p>
+              <div>
+                {type !== "audio" ? (
+                  <>
+                    {translated.length > 0 ? (
+                      <p className="text-lg">{translated}</p>
+                    ) : (
+                      <div className="text-sm flex items-center">
+                        <span>Translating</span>
+                        <MiniLoader />
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <div className="text-sm flex items-center">
-                    <span>Translating</span>
-                    <MiniLoader />
-                  </div>
+                  <button
+                    onClick={handleReadAloud}
+                    className="mt-2 text-blue-500 hover:text-blue-700"
+                  >
+                    Play Audio
+                  </button>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>

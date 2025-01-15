@@ -118,6 +118,9 @@ const Group: FC<GroupProps> = ({ user }) => {
             senderName={message.senderName}
             channel={channel.label}
             languages={navigator.language}
+            groupId={message.groupId}
+            senderId={message.senderId}
+            type={message.type}
           />
           <div className="absolute max-sm:py-8 md:p-0" />
         </div>
