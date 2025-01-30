@@ -1,5 +1,3 @@
-import Logo from "../assets/synf1x/jahelPro.png";
-
 import {
   Profile,
   JoinGroup,

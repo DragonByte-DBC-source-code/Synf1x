@@ -200,3 +200,7 @@ export const updateMessageSenderInfo = async (
     throw error;
   }
 };
+
+export const deleteMessage = () => { 
+  // TODO: create the deletion logic for an individual message
+}

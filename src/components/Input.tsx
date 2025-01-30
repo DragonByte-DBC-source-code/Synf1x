@@ -36,6 +36,7 @@ const Input = ({ groupId, channel }: Props) => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const plusButtonRef = useRef(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const authUser: any = auth?.currentUser;
 
@@ -85,6 +86,7 @@ const Input = ({ groupId, channel }: Props) => {
 
     recognition.onend = () => {
       console.log("Voice recognition ended.");
+      formRef?.current?.requestSubmit();
     };
   };
 
@@ -95,7 +97,8 @@ const Input = ({ groupId, channel }: Props) => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 648) {
+      const smallFormFactor = 648;
+      if (window.innerWidth > smallFormFactor) {
         setPlaceholder("Type a message...");
       } else {
         setPlaceholder("Type...");
@@ -196,6 +199,7 @@ const Input = ({ groupId, channel }: Props) => {
 
   return (
     <form
+      ref={formRef}
       onSubmit={handleSubmit}
       className="flex justify-center items-center absolute bottom-4 left-0 w-full pt-12"
     >
@@ -277,7 +281,7 @@ const Input = ({ groupId, channel }: Props) => {
         onChange={(e) => {
           setMessage(e.target.value);
         }}
-        value={message}
+        value={isSpeech ? "" : message}
         id="inpt"
       />
 
