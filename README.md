@@ -7,5 +7,4 @@ The platform that connects the entire world together
 ### without having to speak their language!
 
 # UPCOMING!!!
-- voice messages & translation
-- video calls
+- video calls JIT translation
