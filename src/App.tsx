@@ -15,7 +15,7 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const [proAlertShown, setProAlertShown] = useState(false); // Flag to track if the alert has been shown
+  const [proAlertShown, setProAlertShown] = useState(false);
 
   const routes = {
     home: "/",
@@ -26,56 +26,36 @@ const App = () => {
     checkout: "/checkout",
   };
 
-  const month = 2629746000; // Number of milliseconds in a month
-
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (authUser: any) => {
       setUser(authUser);
       setLoading(false);
-      // Redirect logic
       if (!authUser) {
-        if (location.pathname !== routes.signup) {
-          navigate(routes.signup);
-        }
+        if (location.pathname !== routes.signup) navigate(routes.signup);
       } else if (location.pathname === routes.signup) {
         navigate(routes.home);
       } else if (
-        !Object.values(routes).some((route) => {
-          if (typeof route === "function") {
-            // Handle dynamic routes
-            return location.pathname.startsWith(route(""));
-          } else {
-            return location.pathname === route;
-          }
-        })
+        !Object.values(routes).some((route) =>
+          typeof route === "function"
+            ? location.pathname.startsWith(route(""))
+            : location.pathname === route
+        )
       ) {
         navigate(routes.home);
       }
     });
 
-    // Check "pro" status on app mount
     checkProStatus();
 
-    // Set interval to check "pro" status and reset it after a month
-    const intervalId = setInterval(checkProStatus, month);
-
-    // Cleanup function
     return () => {
-      clearInterval(intervalId);
       unsubscribe();
     };
-  }, [navigate, location, routes]);
+  }, [navigate, location]);
 
-  // Function to check "pro" status and perform redirection if necessary
   const checkProStatus = () => {
-    const proUsers: any = [];
-    if (
-      localStorage.getItem("isPro") === "true" &&
-      !proAlertShown &&
-      proUsers.includes(user)
-    ) {
-      setProAlertShown(true); // Set the flag to true after showing the alert
+    if (localStorage.getItem("isPro") === "true" && !proAlertShown) {
+      setProAlertShown(true);
       if (location.pathname === routes.upgrade) {
         navigate(routes.home);
         alert("Already on pro plan!");
@@ -83,37 +63,16 @@ const App = () => {
     }
   };
 
-  const isProController: any = () => {
-    /*
-
-    TO DO: 
-
-    Will fetch a server.
-    If a user is included in the list the server sends,
-    then the isPro controller in the localStorage will be set to `true`.
-    Else, we'll just delete the property from localStorage.
-    Hence, the server will be the indicator of who's an actual pro member,
-    and who ain't.
-    */
-    
-    // Just a placeholder, will be removed later on when we build the function.
-    return isProController();
-  }
-
-  return (
-    <>
-      {loading ? (
-        <Loading />
-      ) : (
-        <Routes>
-          <Route path={routes.home} element={<Home user={user} />} />
-          <Route path={routes.signup} element={<Signup />} />
-          <Route path={routes.group(":id")} element={<Group user={user} />} />
-          <Route path={routes.image} element={<ImageDisplay />} />
-          <Route path={routes.upgrade} element={<UpgradeBenefits />} />
-        </Routes>
-      )}
-    </>
+  return loading ? (
+    <Loading />
+  ) : (
+    <Routes>
+      <Route path={routes.home} element={<Home user={user} />} />
+      <Route path={routes.signup} element={<Signup />} />
+      <Route path={routes.group(":id")} element={<Group user={user} />} />
+      <Route path={routes.image} element={<ImageDisplay />} />
+      <Route path={routes.upgrade} element={<UpgradeBenefits />} />
+    </Routes>
   );
 };
 

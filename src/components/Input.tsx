@@ -8,11 +8,14 @@ import UploadButton from "../assets/synf1x/upload_btn.png";
 import PlusButton from "../assets/synf1x/plusButton.png";
 import StickerButton from "../assets/synf1x/stickerButton.png";
 
-/* Michael Fucking Richards */
+// Michael Richards image
 import MichaelRichards from "../assets/MichaelRichards/MichaelRichards.png";
 
-// css imports
+// CSS imports
 import "./css/ButtonAnimations.css";
+
+// Compponent imports
+import { VideoCall } from "../components";
 
 interface Props {
   groupId: string;
@@ -29,21 +32,19 @@ const Input = ({ groupId, channel }: Props) => {
   const [message, setMessage] = useState("");
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [placeholder, setPlaceholder] = useState("");
-
-  const  [isSpeech, setIsSpeech] = useState<boolean>(false);
+  const [isSpeech, setIsSpeech] = useState<boolean>(false);
+  const [renderVideo, setRenderVideo] = useState(false);
 
   const storage = getStorage();
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const plusButtonRef = useRef(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const authUser: any = auth?.currentUser;
-
   const buttons = [UploadButton, MichaelRichards, StickerButton];
 
+  // Speech recognition setup
   const record = () => {
-    // Check if the browser supports the SpeechRecognition API
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
@@ -53,33 +54,23 @@ const Input = ({ groupId, channel }: Props) => {
       return;
     }
 
-    // Create a new instance of SpeechRecognition
     const recognition = new SpeechRecognition();
-
-    // Set the language (this will match the device's language)
     recognition.lang = navigator.language; // e.g., 'en-US' for English
-
-    // Set continuous mode to allow continuous speech recognition
     recognition.continuous = false;
 
-    // Start recognition
     recognition.start();
 
     recognition.onstart = () => {
-      console.log('Start recognition...');
+      console.log("Start recognition...");
     };
 
     recognition.onresult = (event: any) => {
-      // Get the transcribed text from the recognition result
       const spokenText = event.results[0][0].transcript;
-
-      // Set the message state to the transcribed text
       setMessage(spokenText);
       setIsSpeech(true);
     };
 
     recognition.onerror = (event: any) => {
-      // Handle errors
       console.error("Error occurred in speech recognition:", event.error);
       alert("Error occurred in speech recognition.");
     };
@@ -90,61 +81,47 @@ const Input = ({ groupId, channel }: Props) => {
     };
   };
 
-
   const stickerUpload = () => {
     alert("Sticker Upload");
   };
 
+  // Resize handler for placeholder text
   useEffect(() => {
     const handleResize = () => {
       const smallFormFactor = 648;
-      if (window.innerWidth > smallFormFactor) {
-        setPlaceholder("Type a message...");
-      } else {
-        setPlaceholder("Type...");
-      }
+      setPlaceholder(
+        window.innerWidth > smallFormFactor ? "Type a message..." : "Type..."
+      );
     };
 
-    // Initial check
     handleResize();
-
-    // Listen for window resize events
     window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-    // Cleanup
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []); // Only run this effect once, on component mount
+  const item = (n: number) => n - 1; // indexes for button selection
 
-  const item = (n: number) => n - 1; // indexes and stuff smh
-
+  // Handle form submission
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Trim message to avoid sending empty messages
     const trimmedMessage = message.trim();
-
-    if (trimmedMessage === "") {
-      // If the message is empty, simply return
-      return;
-    }
+    if (trimmedMessage === "") return;
 
     try {
-      // Create a message with the text content
       const messageDoc: MessageProps = {
-        content: trimmedMessage.substring(0, 400), // Limit content length to 400 characters
+        content: trimmedMessage.substring(0, 400),
         senderPhotoURL: authUser?.photoURL,
         senderName: authUser?.displayName,
-        groupId: groupId,
-        channel: channel,
+        groupId,
+        channel,
         senderId: auth?.currentUser?.uid,
-        type: isSpeech ? 'audio' : 'text',
+        type: isSpeech ? "audio" : "text",
         languages: navigator.language,
       };
 
-      await createMessage(messageDoc); // Send the message
-      setMessage(""); // Clear the message input
+      await createMessage(messageDoc);
+      setMessage("");
       setIsSpeech(false);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -152,31 +129,30 @@ const Input = ({ groupId, channel }: Props) => {
     }
   };
 
+  // Handle image change and upload
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
     if (file) {
       try {
-        // Upload the image to Firebase Storage
         const storageRef = ref(
           storage,
           `images/${auth.currentUser?.uid}/${file.name}`
         );
         await uploadBytes(storageRef, file);
 
-        // Get the download URL of the uploaded image
         const imageURL = await getDownloadURL(storageRef);
 
-        // Create a message with the image URL
         const messageDoc: MessageProps = {
           content: imageURL,
           senderPhotoURL: authUser?.photoURL,
           senderName: authUser?.displayName,
-          groupId: groupId,
-          channel: channel,
+          groupId,
+          channel,
           senderId: auth?.currentUser?.uid,
           type: "image",
           languages: navigator.language,
         };
+
         await createMessage(messageDoc);
         setShowImageUpload(false);
       } catch (error) {
@@ -186,8 +162,7 @@ const Input = ({ groupId, channel }: Props) => {
     }
   };
 
-  // the ugliest code I've ever written in the past 3 years
-  // it's responsible for rotating the `+` button
+  // Handle upload button click (rotating button)
   const handleUploadButtonClick = () => {
     setShowImageUpload(!showImageUpload);
     if (plusButtonRef.current) {
@@ -217,19 +192,15 @@ const Input = ({ groupId, channel }: Props) => {
           />
         </button>
 
-        <div className="absolute top-0 -mt-8 flex justify-center items-center w-screen">
-          <div
-            className={`${
-              showImageUpload ? "visible" : "hidden"
-            } bg-gray-600 min-w-screen flex flex-row justify-center items-center absolute -left-[50px] gap-4 rounded-md`}
-          >
+        <div
+          className={`absolute top-0 -mt-8 flex justify-center items-center w-screen ${
+            showImageUpload ? "visible" : "hidden"
+          }`}
+        >
+          <div className="bg-gray-600 min-w-screen flex flex-row justify-center items-center absolute -left-[50px] gap-4 rounded-md">
             <div
               className="px-2 py-2 bg-transparent text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring"
-              onClick={() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.click();
-                }
-              }}
+              onClick={() => fileInputRef.current?.click()}
             >
               <img
                 src={buttons[item(1)]}
@@ -278,9 +249,7 @@ const Input = ({ groupId, channel }: Props) => {
         type="text"
         className="text-center px-4 py-2 border border-gray-500 rounded-md focus:outline-none focus:border-blue-500 bg-gray-800 text-white md:w-1/3 max-sm:w-1/4"
         placeholder={placeholder}
-        onChange={(e) => {
-          setMessage(e.target.value);
-        }}
+        onChange={(e) => setMessage(e.target.value)}
         value={isSpeech ? "" : message}
         id="inpt"
       />
@@ -291,6 +260,49 @@ const Input = ({ groupId, channel }: Props) => {
       >
         Send
       </button>
+      <button
+        type="button"
+        className="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none"
+        onClick={() => setRenderVideo((prev) => !prev)}
+      >
+        📹
+      </button>
+      {renderVideo && (
+        <div
+          className="fixed bottom-4 right-4 bg-gray-900 rounded-lg shadow-lg z-50 cursor-move"
+          style={{ width: 300, height: 200 }}
+          onMouseDown={(e) => {
+            const element = e.currentTarget;
+            let shiftX = e.clientX - element.getBoundingClientRect().left;
+            let shiftY = e.clientY - element.getBoundingClientRect().top;
+
+            const moveAt = (pageX: number, pageY: number) => {
+              element.style.left = pageX - shiftX + "px";
+              element.style.top = pageY - shiftY + "px";
+            };
+
+            const onMouseMove = (event: MouseEvent) =>
+              moveAt(event.pageX, event.pageY);
+
+            document.addEventListener("mousemove", onMouseMove);
+
+            document.onmouseup = () => {
+              document.removeEventListener("mousemove", onMouseMove);
+              document.onmouseup = null;
+            };
+          }}
+        >
+          <div className="flex justify-end p-1">
+            <button
+              className="text-white bg-red-600 px-2 py-1 rounded-md hover:bg-red-700"
+              onClick={() => setRenderVideo(false)}
+            >
+              ✖
+            </button>
+          </div>
+          <VideoCall />
+        </div>
+      )}
     </form>
   );
 };

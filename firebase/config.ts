@@ -25,6 +25,11 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 // export the consts
-export { analytics, auth, db, storage };
+export {
+  analytics,
+  auth,
+  db,
+  storage,
+};
 
 export default app;

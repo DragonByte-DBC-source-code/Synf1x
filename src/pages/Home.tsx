@@ -27,6 +27,10 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
   const openJoin = () => setShowJoin(true);
   const closeJoin = () => setShowJoin(false);
 
+
+  const month = 1000 * 60 * 60 * 24 * 30; // 30 days in ms
+
+
   // the function that retrieves all the groups from the database, JIT based
   useEffect(() => {
     const unsubscribe: any = getGroupsSnapshot({ setGroups });
@@ -37,6 +41,51 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
   useEffect(() => {
     document.title = "Synf1x | Home";
   }, []);
+
+  // ✅ Runs when `user` is set
+  useEffect(() => {
+    if (user) {
+      isProController();
+      const intervalId = setInterval(isProController, month);
+      return () => clearInterval(intervalId);
+    }
+  }, []);
+
+  const isProController = async () => {
+    try {
+      const proServerAPI = import.meta.env.VITE_PRO_SERVER_API;
+      const getIDs = "ids";
+      //alert(proServerAPI + getIDs);
+      const response = await fetch(proServerAPI + getIDs, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch pro users");
+
+      const data = await response.json();
+
+      if (user && data.includes(user.uid)) {
+        localStorage.setItem("isPro", "true");
+      } else {
+        /*
+        // The user ain't on pro plan so just remove the state
+        // It also eliminates the possibility of shared localStorage data
+        // across multiple users which aren't necessarily on pro plan
+        */
+        localStorage.removeItem("isPro");
+      }
+    } catch (error) {
+      console.error("Error fetching pro controller:", error);
+    }
+    finally {
+      // We sometimes get odd errors that don't affect anything so
+      // just clean it up 
+      console.clear();
+    }
+  };
 
   return (
     <>
@@ -120,7 +169,7 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
               <div className="bg-gray-900 p-4 rounded-lg w-3/4 flex flex-col items-center">
                 <JoinGroup
                   canJoin={
-                    groupsAmount < 2 || localStorage.getItem("isPro") == "true"
+                    groupsAmount <= 2 || localStorage.getItem("isPro") == "true"
                   }
                   set={setGroupsAmount}
                 />

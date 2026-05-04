@@ -19,7 +19,7 @@
 
 /* Define the rotating border effect */
 .border-gradient {
-  --border-size: 3px; /* Adjust the border size as needed */
+  --border-size: 3.0001px; /* Adjust the border size as needed */
   border: var(--border-size) solid transparent;
 
   /* Apply animation for the rotating color effect */

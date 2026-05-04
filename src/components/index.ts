@@ -8,6 +8,7 @@ import ChannelsMenu from "./ChannelsMenu";
 import Message from "./Message";
 import ArrowIcon from "./Arrow";
 import PayPalComponent from "./Paypal";
+import VideoCall from "./VideoCall";
 
 export {
     Profile,
@@ -20,4 +21,5 @@ export {
     Message,
     ArrowIcon,
     PayPalComponent,
+    VideoCall,
 }

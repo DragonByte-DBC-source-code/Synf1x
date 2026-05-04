@@ -8,13 +8,15 @@ export default function UpgradeBenefits() {
   const benefits: Array<string> = [
     "Unlimited groups to join/create",
     "Access to our best translating model: Synf1x Ultra",
-    "Faster translation times"
+    "Faster translation times",
+    "Have the sender's voice play on voice messages",
   ];
 
   const defaults: Array<string> = [
     "2 groups to join/create",
     "Access to the regular translating model: Synf1xation",
-    "Standard translation times"
+    "Standard translation times",
+    ""
   ];
 
   const navigate = useNavigate();
@@ -22,7 +24,7 @@ export default function UpgradeBenefits() {
 
   const handleUpgradeClick = () => {
     setShowPayPal(true);
-    localStorage.setItem("showPayPal", "true");
+    localStorage.setItem("showPayPal", String(showPayPal));
     console.clear();
     navigate("/upgrade", { replace: true });
   };
@@ -57,21 +59,28 @@ export default function UpgradeBenefits() {
             </div>
             <div className="grid grid-cols-1 gap-4 text-lg">
               {defaults.map((dflt, index) => (
-                <p key={index} className="text-blue-500">- {dflt}</p>
+                <>
+                  {dflt != "" ? (
+                    <p key={index} className="text-blue-500">
+                      - {dflt}
+                    </p>
+                  ) : <p className="text-transparent">dflt</p>}
+                </>
               ))}
             </div>
-            <input className="mt-16 justify-center invisible py-2"/>
+            <input className="mt-16 justify-center invisible py-2" />
           </div>
           <div className="flex flex-col justify-center items-center size-[95%] max-w-[500px] rounded-lg border-2 border-gradient p-6 text-white bg-gradient-to-r from-gray-900 to-gray-800">
             <div className="text-5xl mb-12 italic">
               <label>
-                Upgrade to{" "}
-                <span className="gradient-text">Pro</span>
+                Upgrade to <span className="gradient-text">Pro</span>
               </label>
             </div>
             <div className="grid grid-cols-1 gap-4 text-lg">
               {benefits.map((benefit, index) => (
-                <p key={index} className="gradient-text">- {benefit}!</p>
+                <p key={index} className="gradient-text">
+                  - {benefit}!
+                </p>
               ))}
             </div>
             <footer className="mt-16 flex justify-center">
@@ -79,7 +88,7 @@ export default function UpgradeBenefits() {
                 onClick={handleUpgradeClick}
                 className="text-lg bg-gradient-to-r from-transparent to-transparent hover:from-gray-800 hover:to-gray-700 px-4 py-2 rounded-md text-white cursor-pointer"
               >
-                {'Upgrade Now ->'} 
+                {"Upgrade Now ->"}
               </p>
             </footer>
           </div>
