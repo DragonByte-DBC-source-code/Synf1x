@@ -4,86 +4,120 @@ import {
   PayPalButtons,
   usePayPalScriptReducer,
 } from "@paypal/react-paypal-js";
-
+import { getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-
 import Loading from "./Loading";
-
 import "./css/gradient.css";
+
+const SERVER_URL = "http://localhost:8081";
 
 const Buttons: React.FC = () => {
   const navigate = useNavigate();
   const [{ isPending }] = usePayPalScriptReducer();
 
-  const createOrder = (_data: any, actions: any): Promise<string> =>
-    actions.order.create({
-      purchase_units: [{ amount: { value: "10.00", currency_code: "USD" } }],
+  const createOrder = async (_data: any, actions: any): Promise<string> => {
+    return actions.order.create({
+      purchase_units: [
+        {
+          amount: {
+            value: "10.00",
+            currency_code: "USD",
+          },
+        },
+      ],
     });
+  };
 
-  const onApprove = (_data: any, actions: any): Promise<void> => {
+  const onApprove = async (_data: any, actions: any): Promise<void> => {
+    await actions.order.capture();
+
+    const uid = getAuth().currentUser?.uid;
+
+    if (uid) {
+      try {
+        await fetch(`${SERVER_URL}/register`, {
+          method: "POST",
+          body: uid,
+        });
+      } catch (e) {
+        console.error("Failed to register pro status:", e);
+      }
+    }
+
     localStorage.setItem("isPro", "true");
+
     navigate("/");
-    alert("Congrats on upgrading to pro!");
-    localStorage.removeItem("showPayPal");
-    return actions.order.capture();
+    alert("Congrats on upgrading to Pro!");
   };
 
   const onError = (err: any): void => {
-    console.error("Payment error:", err.message);
+    console.error("Payment error:", err?.message || err);
   };
-  
-  return (
-    <div className="flex justify-center items-center h-screen bg-gray-800 ring-0">
-      {isPending ? (
+
+  if (isPending) {
+    return (
+      <div className="paypal-loading">
         <Loading />
-      ) : (
-        <div className="md:min-w-[40%] absolute max-sm:min-w-[50%]">
-          <PayPalButtons
-            style={{ layout: "horizontal", color: "blue", shape: "pill" }}
-            createOrder={(data: any, actions: any) =>
-              createOrder(data, actions)
-            }
-            onApprove={(data: any, actions: any) => onApprove(data, actions)}
-            onError={(err) => onError(err)}
-          />
-        </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="paypal-buttons-wrapper flex flex-col items-center">
+
+      <PayPalButtons
+        style={{
+          layout: "vertical",
+          color: "blue",
+          shape: "rect",
+          label: "paypal",
+          height: 48,
+        }}
+        createOrder={createOrder}
+        onApprove={onApprove}
+        onError={onError}
+      />
+
+      <div className="payment-security">
+        <span className="security-icon">✓</span>
+        <span className="pl-2">Secure payment processed by PayPal</span>
+      </div>
     </div>
   );
 };
 
-const Text: React.FC = () => (
-  <div
-    className="text-5xl font-bold break-words ml-2 text-white bottom-[60%] absolute"
-  >
-    Upgrade with <i>Paypal</i>
-    <div className="my-4" />
-  </div>
-);
-
 const PayPalComponent: React.FC = () => {
-  const opts: any = { "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID };
+  const opts = {
+    "clientId": import.meta.env.VITE_PAYPAL_CLIENT_ID,
+    currency: "USD",
+    intent: "capture",
+  };
 
   return (
-    <div
-      className="flex flex-col justify-center items-center h-screen bg-gray-800 min-w-screen ring-0"
-      onLoad={() => console.clear()}
-    >
+    <div className="paypal-checkout w-full ">
       <PayPalScriptProvider options={opts}>
-        <Text />
-        <Buttons />
+        <div className="paypal-card">
+          <div className="paypal-header"></div>
+
+          <div className="paypal-divider" />
+
+          <div className="paypal-summary flex flex-col justify-between items-center">
+            <div className="summary-row">
+              <span className="pr-2">Access:</span>
+              <span className="summary-muted">Immediate</span>
+            </div>
+
+            <div className="summary-row">
+              <span className="pr-2">Total:</span>
+              <strong>$10.00 USD</strong>
+            </div>
+          </div>
+          <br />
+          <div className="w-full">
+            <Buttons />
+          </div>
+        </div>
       </PayPalScriptProvider>
-      {/*No rings for the buttons*/}
-      <style>
-        {`
-        div:focus, iframe:focus {
-            outline: none;
-        },
-        * {
-          color: white;
-        }
-        `}
-      </style>
     </div>
   );
 };

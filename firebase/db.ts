@@ -1,27 +1,36 @@
 import { db } from "./config";
 import {
   collection,
+  doc,
   addDoc,
   getDoc,
-  doc,
-  onSnapshot,
+  getDocs,
   updateDoc,
-  serverTimestamp,
   arrayRemove,
+  arrayUnion,
+  onSnapshot,
   query,
   where,
-  getDocs
+  serverTimestamp,
 } from "firebase/firestore";
 
+export type GroupProps = {
+  id: string;
+  name: string;
+  members: string[];
+  channels: string[];
+  editor: string;
+};
 
-// also needed somewhere else so we'll export it
 export type MessageProps = {
   senderName: string;
   senderPhotoURL: string;
   content: string;
+  languages: string | undefined;
   groupId: string;
   channel: string;
-  senderId: string | undefined;  //actually? always defined. Only authorized users can send messages  
+  senderId: string | undefined;
+  type: "text" | "image" | "audio";
 };
 
 export const createGroup = async ({
@@ -99,24 +108,32 @@ export const createMessage = async (message: MessageProps) => {
   }
 };
 
-export const getGroup = async ({ id }: { id: string }) => {
+export const getGroup = async ({
+  id,
+}: {
+  id: string;
+}): Promise<GroupProps | null> => {
   try {
     const groupRef = doc(db, "groups", id);
     const groupSnapshot = await getDoc(groupRef);
 
-    if (groupSnapshot.exists()) {
-      const data = { id: groupSnapshot.id, ...groupSnapshot.data() };
-      return data;
-    } else {
-      window.location.replace("/");
+    if (!groupSnapshot.exists()) {
       return null;
     }
+
+    const data = groupSnapshot.data();
+
+    return {
+      id: groupSnapshot.id,
+      name: data.name,
+      members: data.members,
+      channels: data.channels,
+      editor: data.editor,
+    };
   } catch (e: any) {
-    alert("Error getting group: " + e.message);
-    return null;
+    throw new Error("Error getting group: " + e.message);
   }
 };
-
 export const getMessageSnaphot = ({ setMessages }: { setMessages: any }) => {
   try {
     const messagesCollection = collection(db, "messages");
@@ -187,7 +204,7 @@ export const exitGroup = async (groupId: string, userId: string) => {
 export const updateMessageSenderInfo = async (
   userId: string,
   senderName: string | null, // always set though because I've denied any null options for this prop way earlier in development
-  senderPhotoURL: string | null,
+  senderPhotoURL: string | null
 ) => {
   try {
     // Query messages sent by the user

@@ -1,214 +1,510 @@
-import { useEffect, FC, useState, useRef, memo } from "react";
-import { getGroup, exitGroup } from "../firebase/db";
-import { useParams, useNavigate } from "react-router-dom";
+import {
+  FC,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 import {
-  Loading,
-  Input,
-  ChannelsMenu,
-  Message,
   ArrowIcon,
+  Input,
+  Loading,
+  Message,
+  ChannelsMenu,
 } from "../components";
-import { getMessageSnaphot } from "../firebase/db";
-import { FixedSizeList } from "react-window";
+
+import {
+  exitGroup,
+  getGroup,
+  getMessageSnaphot,
+  GroupData,
+} from "../firebase/db";
 
 import { auth } from "../firebase/config";
 
-type GroupProps = {
+type GroupComponentProps = {
   user: any;
 };
 
-const Group: FC<GroupProps> = ({ user }) => {
+type MessageData = {
+  id: string;
+  content: string;
+  senderPhotoURL: string;
+  senderName: string;
+  groupId: string;
+  channel: string | { label: string; value: string };
+  senderId: string | undefined;
+  type: "text" | "image" | "audio";
+  languages?: string;
+  timestamp?: any;
+};
+
+const Group: FC<GroupComponentProps> = ({ user }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const cleanedId = id ? id.replace(/[^a-zA-Z0-9]/g, "") : "";
 
-  const [groupData, setGroupData] = useState<any | null>(null);
-  const [messages, setMessages] = useState<string[]>([]);
-  const [channel, setChannel] = useState<any>({ value: "Main", label: "Main" });
-  const listRef = useRef<FixedSizeList | null>(null);
+  const cleanedId = id
+    ? id.replace(/[^a-zA-Z0-9]/g, "")
+    : "";
+
+  const [groupData, setGroupData] =
+    useState<GroupData | null>(null);
+
+  const [messages, setMessages] =
+    useState<MessageData[]>([]);
+
+  const [channel, setChannel] =
+    useState("Main");
+
+  const [copied, setCopied] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const messagesEndRef =
+    useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchGroupData = async () => {
+      if (!cleanedId) {
+        setError("Invalid group ID.");
+        setLoading(false);
+        return;
+      }
+
       try {
-        if (cleanedId) {
-          const data: any = await getGroup({ id: cleanedId });
-          if (!data.members.includes(user.uid)) {
-            navigate("/");
-            return;
+        const data = await getGroup({
+          id: cleanedId,
+        });
+
+        if (!data) {
+          if (!cancelled) {
+            setError("Group could not be found.");
           }
-          setGroupData(data);
-          document.title = `Group - ${data.name}`;
-        } else {
-          alert("ID is undefined or contains invalid characters");
+
+          return;
         }
-      } catch (error) {
-        console.error("Error fetching group data:", error);
+
+        if (!data.members.includes(user.uid)) {
+          navigate("/", {
+            replace: true,
+          });
+
+          return;
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setGroupData(data);
+
+        document.title = `Group - ${data.name}`;
+
+        const savedChannel =
+          localStorage.getItem(
+            `lastChannel_${cleanedId}`
+          );
+
+        const availableChannels =
+          data.channels || [];
+
+        const selectedChannel =
+          savedChannel &&
+          availableChannels.some(
+            (item: any) =>
+              item.toLowerCase() ===
+              savedChannel.toLowerCase()
+          )
+            ? savedChannel
+            : availableChannels.includes("Main")
+              ? "Main"
+              : availableChannels[0] || "Main";
+
+        setChannel(selectedChannel);
+      } catch {
+        if (!cancelled) {
+          setError(
+            "Failed to load this group."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchGroupData();
-  }, [cleanedId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cleanedId, navigate, user.uid]);
 
   useEffect(() => {
-    const unsubscribe = getMessageSnaphot({
-      setMessages: (newMessages: any) => {
-        const filteredMessages = newMessages.filter(
-          (message: any) =>
-            message.channel.label === channel.label && message.groupId === id
-        );
-        const sortedMessages = filteredMessages
-          .slice()
-          .sort((a: any, b: any) =>
-            a.timestamp && b.timestamp
-              ? a.timestamp.toMillis() - b.timestamp.toMillis()
-              : 0
-          );
+    if (!cleanedId) {
+      return;
+    }
 
-        // Only update state if the new messages differ from the current messages
-        if (JSON.stringify(sortedMessages) !== JSON.stringify(messages)) {
-          setMessages(sortedMessages);
-        }
+    const unsubscribe = getMessageSnaphot({
+      setMessages: (
+        newMessages: MessageData[]
+      ) => {
+        const filteredMessages =
+          newMessages
+            .filter((message) => {
+              if (
+                message.groupId !==
+                cleanedId
+              ) {
+                return false;
+              }
+
+              const messageChannel =
+                typeof message.channel ===
+                "string"
+                  ? message.channel
+                  : message.channel?.label;
+
+              return (
+                messageChannel ===
+                channel
+              );
+            })
+            .sort((a, b) => {
+              const aTime =
+                a.timestamp?.toMillis?.() ??
+                0;
+
+              const bTime =
+                b.timestamp?.toMillis?.() ??
+                0;
+
+              return aTime - bTime;
+            });
+
+        setMessages(filteredMessages);
       },
     });
 
-    return () => unsubscribe();
-  }, [channel.label, id]);
+    return () => {
+      unsubscribe?.();
+    };
+  }, [cleanedId, channel]);
 
   useEffect(() => {
-    listRef?.current?.scrollToItem(messages.length - 1, "smart");
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
   }, [messages]);
 
-  const copyGroupIdToClipboard = () => {
-    if (groupData) {
-      const groupId = groupData.id;
-      navigator.clipboard
-        .writeText(groupId)
-        .then(() => {
-          alert("Code coppied. Share it with friends/coworkers, and enjoy!");
-        })
-        .catch((error) => console.error("Error copying to clipboard:", error));
-    }
-  };
-
-  //destreoy the image in local storage
   useEffect(() => {
-    const image = localStorage.getItem("image");
+    const image =
+      localStorage.getItem("image");
+
     if (image) {
       localStorage.removeItem("image");
     }
   }, []);
 
-  // Function to render each individual message
-  const MessageItem: FC<{ index: number; style: React.CSSProperties }> = memo(
-    ({ index, style }) => {
-      const message: any = messages[index];
-      const isCurrentUser = message.senderId === auth.currentUser?.uid; // Check if the message was sent by the current user
+  const copyGroupIdToClipboard =
+    useCallback(async () => {
+      if (!groupData?.id) {
+        return;
+      }
 
-      // Define a CSS class to align messages to the right if sent by the current user
-      const messageContainerClass = isCurrentUser ? "self-end" : "self-start";
+      try {
+        await navigator.clipboard.writeText(
+          groupData.id
+        );
 
-      return (
-        <div style={style} className={`pt-8 flex ${messageContainerClass}`}>
-          {isCurrentUser && <div className="flex-grow" />}
-          <Message
-            key={message.id}
-            content={message.content}
-            senderPhotoURL={message.senderPhotoURL}
-            senderName={message.senderName}
-            channel={channel.label}
-            languages={navigator.language}
-            groupId={message.groupId}
-            senderId={message.senderId}
-            type={message.type}
-          />
-          <div className="absolute max-sm:py-8 md:p-0" />
-        </div>
-      );
-    }
+        setCopied(true);
+
+        window.setTimeout(() => {
+          setCopied(false);
+        }, 2000);
+      } catch {
+        setError(
+          "Unable to copy the group ID."
+        );
+      }
+    }, [groupData?.id]);
+
+  const handleChannelChange =
+    useCallback(
+      (newChannel: string) => {
+        setChannel(newChannel);
+
+        if (cleanedId) {
+          localStorage.setItem(
+            `lastChannel_${cleanedId}`,
+            newChannel
+          );
+        }
+      },
+      [cleanedId]
+    );
+
+  const handleExit =
+    useCallback(async () => {
+      if (
+        !cleanedId ||
+        !user?.uid
+      ) {
+        return;
+      }
+
+      try {
+        await exitGroup(
+          cleanedId,
+          user.uid
+        );
+
+        navigate("/", {
+          replace: true,
+        });
+      } catch {
+        setError(
+          "Failed to leave the group."
+        );
+      }
+    }, [
+      cleanedId,
+      navigate,
+      user?.uid,
+    ]);
+
+  const currentUserId =
+    auth.currentUser?.uid;
+
+  const MessageItem = useMemo(
+    () =>
+      memo(
+        ({
+          message,
+        }: {
+          message: MessageData;
+        }) => {
+          const isCurrentUser =
+            message.senderId ===
+            currentUserId;
+
+          const messageChannel =
+            typeof message.channel ===
+            "string"
+              ? message.channel
+              : message.channel?.label;
+
+          return (
+            <div
+              className={`flex w-full ${
+                isCurrentUser
+                  ? "justify-end"
+                  : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-[85%] md:max-w-[70%] ${
+                  isCurrentUser
+                    ? "items-end"
+                    : "items-start"
+                }`}
+              >
+                <Message
+                  content={
+                    message.content
+                  }
+                  senderPhotoURL={
+                    message.senderPhotoURL
+                  }
+                  senderName={
+                    message.senderName
+                  }
+                  channel={
+                    messageChannel
+                  }
+                  languages={
+                    navigator.language
+                  }
+                  groupId={
+                    message.groupId
+                  }
+                  senderId={
+                    message.senderId
+                  }
+                  type={
+                    message.type
+                  }
+                />
+              </div>
+            </div>
+          );
+        }
+      ),
+    [currentUserId]
   );
 
-  const exit = async () => {
-    try {
-      navigate("/");
-      await exitGroup(cleanedId, user.uid);
-    } catch (error) {
-      console.error("Error exiting group:", error);
-    }
-  };
+  const channels = useMemo(
+    () => groupData?.channels || [],
+    [groupData?.channels]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-950">
+        <Loading />
+      </div>
+    );
+  }
+
+  if (!groupData) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-950 px-6 text-center text-white">
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-5 text-red-300">
+          {error ||
+            "Group could not be loaded."}
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate("/", {
+              replace: true,
+            })
+          }
+          className="rounded-xl bg-white/10 px-5 py-3 font-semibold transition hover:bg-white/15"
+        >
+          Return home
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-grow flex items-center justify-center bg-gray-700 text-white p-8 h-screen">
-      {groupData ? (
-        <div className="w-full max-w-screen-xl">
-          <div className="flex justify-center items-center mb-6 top-3">
-            <button
-              onClick={() => navigate("/", { replace: true })}
-              className="md:left-11 top-3 absolute bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded flex items-center max-sm:left-2"
-            >
-              <ArrowIcon />
-            </button>
-            <div className="flex justify-center items-center">
-              <h1 className="text-5xl top-3 absolute self-center">
-                {groupData.name}
-              </h1>
-            </div>
-            <div className="flex items-end justify-end absolute right-11 top-3 max-sm:top-16 max-sm:justify-center max-sm:items-center max-sm:right-auto max-sm:pt-1">
-              <button
-                className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded top-3"
-                onClick={copyGroupIdToClipboard}
-              >
-                Invite others {">"}
-              </button>
-              <button
-                className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded top-3 ml-4"
-                onClick={() => exit()}
-              >
-                Exit Group
-              </button>
-            </div>
+    <div className="h-screen overflow-hidden bg-gray-950 text-white">
+      <div className="flex h-full flex-col">
+        <header className="flex h-16 shrink-0 items-center border-b border-white/10 bg-gray-950/90 px-4 backdrop-blur md:px-6">
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/", {
+                replace: true,
+              })
+            }
+            aria-label="Back"
+            className="mr-3 flex h-10 w-10 items-center justify-center rounded-xl text-white/60 transition hover:bg-white/5 hover:text-white"
+          >
+            <ArrowIcon />
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-lg font-bold">{groupData.name}</h1>
+
+            <p className="text-xs text-white/35">#{channel}</p>
           </div>
-          <div className="py-8" />{" "}
-          {/* A space between the button and the menu */}
-          <div className="flex flex-col absolute mt-32">
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={copyGroupIdToClipboard}
+              className="hidden rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white sm:block"
+            >
+              {copied ? "Copied!" : "Invite"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExit}
+              className="rounded-xl bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 hover:text-red-300 sm:px-4"
+            >
+              Leave
+            </button>
+          </div>
+        </header>
+
+        {error && (
+          <div className="absolute left-1/2 top-20 z-40 -translate-x-1/2 rounded-xl border border-red-500/20 bg-gray-900 px-4 py-3 text-sm text-red-300 shadow-xl">
+            {error}
+          </div>
+        )}
+
+        <div className="flex min-h-0 flex-1">
+          <div className="hidden h-full md:block">
             <ChannelsMenu
-              channels={groupData.channels}
-              id={groupData.id}
-              setChannel={setChannel}
-              isEditor={groupData.editor == user.uid}
+              channels={channels}
+              id={cleanedId}
+              setChannel={handleChannelChange}
+              selectedChannel={channel}
+              isEditor={groupData.editor === user.uid}
             />
           </div>
-          <div className="mx-auto flex flex-col items-center md:pl-2">
-            {messages && (
-              <>
-                <div
-                  style={{
-                    paddingTop: "7.5rem",
-                  }}
+
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3 md:hidden">
+              <span className="text-lg text-indigo-400">#</span>
+
+              <span className="font-semibold">{channel}</span>
+
+              <div className="ml-auto">
+                <ChannelsMenu
+                  channels={channels}
+                  id={cleanedId}
+                  setChannel={handleChannelChange}
+                  selectedChannel={channel}
+                  isEditor={groupData.editor === user.uid}
                 />
-                <FixedSizeList
-                  className="flex justify-center"
-                  height={500}
-                  width={"80%"}
-                  itemCount={messages.length}
-                  itemSize={240}
-                  ref={listRef}
-                >
-                  {MessageItem}
-                </FixedSizeList>
-              </>
-            )}
-            <div className="flex flex-col items-center mt-[10.7rem]" id="input">
-              {JSON.stringify(channel) != "{}" && (
-                <Input groupId={id ?? ""} channel={channel} listRef={listRef} />
-              )}
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5 md:px-8">
+              <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+                {messages.length === 0 ? (
+                  <div className="flex items-center justify-center py-32">
+                    <div className="text-center">
+                      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-2xl text-indigo-400">
+                        #
+                      </div>
+
+                      <h2 className="text-lg font-bold text-white">
+                        {channel}
+                      </h2>
+
+                      <p className="mt-1 text-sm text-white/35">
+                        This channel is empty. Start the conversation.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  messages.map((message) => (
+                    <MessageItem key={message.id} message={message} />
+                  ))
+                )}
+
+                <div ref={messagesEndRef} className="pb-20" />
+                <br/>
+              </div>
+            </div>
+            <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-gray-950/95 px-5 py-3 backdrop-blur md:px-6 md:py-4">
+              <div className="mx-auto flex w-full max-w-4xl justify-center">
+                <div className="w-full">
+                  <Input groupId={cleanedId} channel={channel} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      ) : (
-        <Loading />
-      )}
-      <style>{`body{overflow:hidden}`}</style>
+      </div>
     </div>
   );
 };

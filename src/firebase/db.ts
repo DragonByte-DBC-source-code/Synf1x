@@ -2,6 +2,7 @@ import { db } from "./config";
 
 import {
   collection,
+  arrayUnion,
   doc,
   addDoc,
   getDoc,
@@ -14,6 +15,13 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
+export type GroupData = {
+  id: string;
+  name: string;
+  members: string[];
+  channels: string[];
+  editor: string;
+};
 
 // also needed somewhere else so we'll export it
 export type MessageProps = {
@@ -79,21 +87,32 @@ export const createMessage = async (message: MessageProps) => {
   }
 };
 
-export const getGroup = async ({ id }: { id: string }) => {
+export const getGroup = async ({
+  id,
+}: {
+  id: string;
+}): Promise<GroupData | null> => {
   try {
     const groupRef = doc(db, "groups", id);
     const groupSnapshot = await getDoc(groupRef);
 
-    if (groupSnapshot.exists()) {
-      const data = { id: groupSnapshot.id, ...groupSnapshot.data() };
-      return data;
-    } else {
-      window.location.replace("/");
+    if (!groupSnapshot.exists()) {
       return null;
     }
+
+    const data = groupSnapshot.data();
+
+    return {
+      id: groupSnapshot.id,
+      name: data.name as string,
+      members: (data.members || []) as string[],
+      channels: (data.channels || []) as string[],
+      editor: data.editor as string,
+    };
   } catch (e: any) {
-    alert("Error getting group: " + e.message);
-    return null;
+    throw new Error(
+      "Error getting group: " + e.message
+    );
   }
 };
 
@@ -162,6 +181,42 @@ export const exitGroup = async (groupId: string, userId: string) => {
   });
 
   alert(`Successfully exited the group ${groupName}`);
+};
+
+export const createChannel = async (groupId: string, channelName: string) => {
+  const name = channelName.trim();
+
+  if (!name) {
+    throw new Error("Channel name cannot be empty.");
+  }
+
+  if (name.length > 32) {
+    throw new Error("Channel name cannot exceed 32 characters.");
+  }
+
+  if (name.includes("/")) {
+    throw new Error("Channel names cannot contain '/'.");
+  }
+
+  const groupRef = doc(db, "groups", groupId);
+  const groupSnapshot = await getDoc(groupRef);
+
+  if (!groupSnapshot.exists()) {
+    throw new Error("Group does not exist.");
+  }
+
+  const data = groupSnapshot.data();
+  const channels: string[] = data.channels || [];
+
+  if (
+    channels.some((channel) => channel.toLowerCase() === name.toLowerCase())
+  ) {
+    throw new Error("A channel with this name already exists.");
+  }
+
+  await updateDoc(groupRef, {
+    channels: arrayUnion(name),
+  });
 };
 
 export const updateMessageSenderInfo = async (

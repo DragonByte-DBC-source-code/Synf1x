@@ -19,6 +19,7 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
   const [showCreate, setShowCreate] = useState(false);
   const [groups, setGroups] = useState([]);
   const [groupsAmount, setGroupsAmount] = useState(0);
+  const [groupsLoading, setGroupsLoading] = useState(true);
 
   const navigate = useNavigate();
 
@@ -27,15 +28,17 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
   const openJoin = () => setShowJoin(true);
   const closeJoin = () => setShowJoin(false);
 
-
-  const month = 1000 * 60 * 60 * 24 * 30; // 30 days in ms
-
-
   // the function that retrieves all the groups from the database, JIT based
   useEffect(() => {
-    const unsubscribe: any = getGroupsSnapshot({ setGroups });
-    return () => unsubscribe();
-  }, [setGroups]); // Add any other dependencies here if needed
+  const unsubscribe: any = getGroupsSnapshot({
+    setGroups: (groups: any) => {
+      setGroups(groups);
+      setGroupsLoading(false);
+    },
+  });
+
+  return () => unsubscribe();
+  }, []);
 
   // title changer
   useEffect(() => {
@@ -46,7 +49,7 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
   useEffect(() => {
     if (user) {
       isProController();
-      const intervalId = setInterval(isProController, month);
+      const intervalId = setInterval(isProController, 20);
       return () => clearInterval(intervalId);
     }
   }, []);
@@ -54,42 +57,28 @@ const Home: React.FC<{ user: any }> = ({ user }) => {
   const isProController = async () => {
     try {
       const proServerAPI = import.meta.env.VITE_PRO_SERVER_API;
-      const getIDs = "ids";
-      //alert(proServerAPI + getIDs);
-      const response = await fetch(proServerAPI + getIDs, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      if (!user) {
+        localStorage.removeItem("isPro");
+        return;
+      }
 
-      if (!response.ok) throw new Error("Failed to fetch pro users");
+      const response = await fetch(`${proServerAPI}/check?id=${user.uid}`);
+      if (!response.ok) throw new Error("Failed to fetch pro status");
 
-      const data = await response.json();
-
-      if (user && data.includes(user.uid)) {
+      const isPro = await response.text();
+      if (isPro === "true") {
         localStorage.setItem("isPro", "true");
       } else {
-        /*
-        // The user ain't on pro plan so just remove the state
-        // It also eliminates the possibility of shared localStorage data
-        // across multiple users which aren't necessarily on pro plan
-        */
         localStorage.removeItem("isPro");
       }
     } catch (error) {
       console.error("Error fetching pro controller:", error);
     }
-    finally {
-      // We sometimes get odd errors that don't affect anything so
-      // just clean it up 
-      console.clear();
-    }
   };
 
   return (
     <>
-      {groups.length >= 0 ? (
+      {!groupsLoading ? (
         <div className="flex flex-col min-h-screen bg-gray-800 text-white">
           <header className="bg-gray-800 p-4 flex justify-between items-center py-4">
             <div className="flex items-center gap-2">

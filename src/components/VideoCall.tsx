@@ -1,99 +1,136 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { auth } from "../firebase/config"; // Adjust path if needed
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type WSMsg = {
+import { auth } from "../firebase/config";
+const ICE: RTCIceServer[] = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun.cloudflare.com:3478" },
+  { urls: "stun:stun.cloudflare.com:5349" },
+];
+const WS_URL = import.meta.env.VITE_SIGNALING_URL || "ws://localhost:8080/ws";
+type Peer = {
+  id: string;
+  name: string;
+  stream: MediaStream;
+  connected: boolean;
+};
+type SignalMessage = {
   type: string;
+  room?: string;
+  peerId?: string;
+  name?: string;
   from?: string;
   to?: string;
-  name?: string;
-  data?: any;
+  data?: {
+    sdp?: { type: RTCSdpType; sdp?: string };
+    candidate?: RTCIceCandidateInit;
+  };
 };
-
-type RemotePeer = {
-  id: string;
-  stream: MediaStream;
-  name: string;
-};
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-  { urls: "stun:stun.cloudflare.com:3478" },
-];
-
-const WS_URL = "ws://localhost:8080"; // Use wss:// in production
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getRoomFromPath(): string {
-  return window.location.pathname.replace(/\//g, "").toLowerCase() || "room";
+interface VideoCallProps {
+  onLeave?: () => void;
 }
-
-function getUserName(): string {
-  // Replace with auth.currentUser?.displayName if Firebase is present
+const C = {
+  bg: "#080810",
+  surface: "rgba(255,255,255,.05)",
+  surfaceStrong: "rgba(255,255,255,.08)",
+  border: "rgba(255,255,255,.09)",
+  glass: "rgba(12,12,22,.78)",
+  accent: "#4f8ef7",
+  danger: "#f74f6a",
+  success: "#22d46a",
+  text: "#e8eaf2",
+  muted: "#7a7d94",
+};
+function getMyId() {
+  return auth?.currentUser?.uid || crypto.randomUUID();
+}
+function getMyName() {
   return auth?.currentUser?.displayName || "Guest";
 }
-
-// ─── VideoTile ────────────────────────────────────────────────────────────────
-
-interface VideoTileProps {
-  stream: MediaStream | null;
-  name: string;
-  isLocal?: boolean;
-  muted?: boolean;
-  audioMuted?: boolean;
-  videoOff?: boolean;
-  isSpotlight?: boolean;
-  onClick?: () => void;
+function getRoom() {
+  const parts = window.location.pathname.split("/").filter(Boolean);
+  return parts[parts.length - 1] || "room";
 }
-
-const VideoTile: React.FC<VideoTileProps> = ({
+function initials(name: string) {
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?"
+  );
+}
+function gradientFromId(id: string) {
+  const hue = [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 360;
+  return `linear-gradient(135deg,hsl(${hue},60%,28%),hsl(${
+    (hue + 40) % 360
+  },70%,18%))`;
+}
+function Tile({
   stream,
   name,
-  isLocal = false,
-  muted = false,
-  audioMuted = false,
-  videoOff = false,
-  isSpotlight = false,
+  id,
+  local,
+  muted,
+  videoOff,
+  spotlight,
   onClick,
-}) => {
+}: {
+  stream: MediaStream | null;
+  name: string;
+  id: string;
+  local?: boolean;
+  muted?: boolean;
+  videoOff?: boolean;
+  spotlight?: boolean;
+  onClick?: () => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
-
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+    const video = videoRef.current;
+    if (!video) return;
+    video.srcObject = stream;
+    if (stream) {
+      video.play().catch(() => {});
     }
+    return () => {
+      video.srcObject = null;
+    };
   }, [stream]);
-
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
   return (
     <div
       onClick={onClick}
       style={{
         position: "relative",
-        background: "#1a1a2e",
-        borderRadius: isSpotlight ? "12px" : "8px",
-        overflow: "hidden",
-        cursor: onClick ? "pointer" : "default",
-        border: isSpotlight ? "2px solid #2563eb" : "1px solid #2a2a3e",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         width: "100%",
         height: "100%",
+        minHeight: 0,
+        overflow: "hidden",
+        borderRadius: spotlight ? 20 : 16,
+        background: gradientFromId(id),
+        cursor: onClick ? "pointer" : "default",
+        boxShadow: spotlight
+          ? `0 0 0 2px ${C.accent}55,0 30px 70px rgba(0,0,0,.55)`
+          : "0 10px 35px rgba(0,0,0,.35)",
       }}
     >
-      {/* Avatar fallback when video is off */}
+      {" "}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={local}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          display: videoOff ? "none" : "block",
+          transform: local ? "scaleX(-1)" : undefined,
+          background: "#101018",
+        }}
+      />{" "}
       {videoOff && (
         <div
           style={{
@@ -102,734 +139,1036 @@ const VideoTile: React.FC<VideoTileProps> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "#0f0f23",
           }}
         >
-          <div
+          {" "}
+          <span
             style={{
-              width: isSpotlight ? 96 : 48,
-              height: isSpotlight ? 96 : 48,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: isSpotlight ? 36 : 18,
-              fontWeight: 700,
-              color: "#fff",
-              fontFamily: "system-ui, sans-serif",
+              fontSize: spotlight ? 60 : 42,
+              fontWeight: 800,
+              color: "rgba(255,255,255,.82)",
+              letterSpacing: ".04em",
             }}
           >
-            {initials}
-          </div>
+            {" "}
+            {initials(name)}{" "}
+          </span>{" "}
         </div>
-      )}
-
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted={muted}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          display: videoOff ? "none" : "block",
-          transform: isLocal ? "scaleX(-1)" : "none", // mirror local feed
-        }}
-      />
-
-      {/* Name bar */}
+      )}{" "}
       <div
         style={{
           position: "absolute",
-          bottom: 0,
           left: 0,
           right: 0,
-          padding: "6px 10px",
-          background: "linear-gradient(transparent, rgba(0,0,0,0.75))",
+          bottom: 0,
+          padding: "18px 16px 13px",
+          background: "linear-gradient(transparent,rgba(0,0,0,.75))",
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
         }}
       >
-        {audioMuted && <span style={{ fontSize: 12 }}>🔇</span>}
+        {" "}
+        {muted && (
+          <span
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: C.danger,
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            {" "}
+            <MicOffIcon size={11} />{" "}
+          </span>
+        )}{" "}
         <span
           style={{
-            color: "#fff",
-            fontSize: isSpotlight ? 14 : 11,
-            fontWeight: 600,
-            fontFamily: "system-ui, sans-serif",
-            textShadow: "0 1px 3px rgba(0,0,0,0.8)",
+            color: "white",
+            fontSize: 13,
+            fontWeight: 700,
+            textShadow: "0 1px 5px rgba(0,0,0,.7)",
           }}
         >
-          {name}
-          {isLocal && " (You)"}
-        </span>
-      </div>
-
-      {/* Spotlight indicator */}
-      {isSpotlight && (
-        <div
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            background: "#2563eb",
-            borderRadius: 4,
-            padding: "2px 6px",
-            fontSize: 10,
-            color: "#fff",
-            fontFamily: "system-ui, sans-serif",
-            fontWeight: 600,
-            letterSpacing: "0.05em",
-          }}
-        >
-          SPOTLIGHT
-        </div>
-      )}
+          {" "}
+          {name} {local ? " · You" : ""}{" "}
+        </span>{" "}
+      </div>{" "}
     </div>
   );
-};
-
-// ─── ControlButton ────────────────────────────────────────────────────────────
-
-interface ControlBtnProps {
-  icon: string;
-  label: string;
-  active?: boolean;
-  danger?: boolean;
-  onClick: () => void;
 }
-
-const ControlBtn: React.FC<ControlBtnProps> = ({
+function ControlButton({
   icon,
   label,
   active = true,
   danger = false,
+  disabled = false,
   onClick,
-}) => (
-  <button
-    onClick={onClick}
-    title={label}
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: 4,
-      background: danger ? "#dc2626" : active ? "#2a2a3e" : "#3f3f5a",
-      border: "none",
-      borderRadius: 10,
-      padding: "10px 16px",
-      cursor: "pointer",
-      color: active ? "#fff" : "#ef4444",
-      transition: "all 0.15s ease",
-      minWidth: 64,
-    }}
-    onMouseEnter={(e) => {
-      (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.05)";
-    }}
-    onMouseLeave={(e) => {
-      (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-    }}
-  >
-    <span style={{ fontSize: 20 }}>{icon}</span>
-    <span
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  danger?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      disabled={disabled}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
       style={{
-        fontSize: 10,
-        fontWeight: 600,
-        fontFamily: "system-ui, sans-serif",
-        letterSpacing: "0.02em",
+        minWidth: 64,
+        height: 60,
+        padding: "9px 13px",
+        border: `1px solid ${danger ? "transparent" : C.border}`,
+        borderRadius: 17,
+        background: danger
+          ? C.danger
+          : active
+          ? C.surfaceStrong
+          : "rgba(247,79,106,.15)",
+        color: danger ? "#fff" : active ? C.text : C.danger,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 5,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.55 : 1,
+        transition: "transform .15s,background .15s",
+        backdropFilter: "blur(15px)",
+      }}
+      onMouseEnter={(event) => {
+        if (!disabled) {
+          event.currentTarget.style.transform = "translateY(-2px)";
+        }
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
       }}
     >
-      {label}
-    </span>
-  </button>
-);
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-const VideoCall: React.FC = () => {
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const pcMap = useRef<Map<string, RTCPeerConnection>>(new Map());
-  const peerNames = useRef<Map<string, string>>(new Map()); // <-- FIX: Ref to hold latest names safely
-  const iceCandidateBuffer = useRef<Map<string, RTCIceCandidateInit[]>>(
-    new Map()
+      {" "}
+      {icon}{" "}
+      <span
+        style={{
+          fontSize: 9,
+          fontWeight: 800,
+          letterSpacing: ".08em",
+          textTransform: "uppercase",
+        }}
+      >
+        {" "}
+        {label}{" "}
+      </span>{" "}
+    </button>
   );
+}
+function MicIcon({ size = 19 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {" "}
+      <rect x="9" y="2" width="6" height="12" rx="3" />{" "}
+      <path d="M5 11a7 7 0 0 0 14 0" /> <path d="M12 18v4" />{" "}
+      <path d="M8 22h8" />{" "}
+    </svg>
+  );
+}
+function MicOffIcon({ size = 19 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {" "}
+      <path d="M9 9v3a3 3 0 0 0 5 2.2" /> <path d="M15 9V5a3 3 0 0 0-5.8-1" />{" "}
+      <path d="M5 11a7 7 0 0 0 12.5 4.4" /> <path d="M19 11a7 7 0 0 1-.4 2.3" />{" "}
+      <path d="M12 18v4" /> <path d="M8 22h8" /> <path d="M2 2l20 20" />{" "}
+    </svg>
+  );
+}
+function CameraIcon({ size = 19 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {" "}
+      <rect x="2" y="5" width="15" height="14" rx="2" />{" "}
+      <path d="m17 10 5-3v10l-5-3z" />{" "}
+    </svg>
+  );
+}
+function CameraOffIcon({ size = 19 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {" "}
+      <path d="m3 3 18 18" />{" "}
+      <path d="M10 5h4a2 2 0 0 1 2 2v3l5-3v10l-5-3v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7" />{" "}
+    </svg>
+  );
+}
+function PhoneOffIcon({ size = 19 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {" "}
+      <path d="M10.7 5.1A3 3 0 0 0 7 3.4L4.8 4.7a2 2 0 0 0-.8 2.7 18 18 0 0 0 11.8 11.8 2 2 0 0 0 2.7-.8l1.3-2.2a3 3 0 0 0-1.7-3.7l-2.3-.9a2 2 0 0 0-2.2.5l-.8.8a14 14 0 0 1-4.8-4.8l.8-.8a2 2 0 0 0 .5-2.2z" />{" "}
+      <path d="m3 3 18 18" />{" "}
+    </svg>
+  );
+}
+const VideoCall: React.FC<VideoCallProps> = ({ onLeave }) => {
+  const myId = useRef(getMyId()).current;
+  const myName = useRef(getMyName()).current;
+  const room = useRef(getRoom()).current;
+  const wsRef = useRef<WebSocket | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-
-  const myId = useRef<string>(crypto.randomUUID()).current;
-  const myName = useRef<string>(getUserName()).current;
-  const room = useRef<string>(getRoomFromPath()).current;
-
-  const [remotePeers, setRemotePeers] = useState<RemotePeer[]>([]);
+  const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const namesRef = useRef<Map<string, string>>(new Map());
+  const iceRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const leavingRef = useRef(false);
+  const mountedRef = useRef(true);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [peers, setPeers] = useState<Peer[]>([]);
   const [audioMuted, setAudioMuted] = useState(false);
   const [videoOff, setVideoOff] = useState(false);
-  const [spotlightId, setSpotlightId] = useState<string | null>(null); // null = local
-  const [connected, setConnected] = useState(false);
-  const [participantCount, setParticipantCount] = useState(1);
-
-  // ── Media helpers ──────────────────────────────────────────────────────────
-
-  const toggleAudio = useCallback(() => {
-    streamRef.current?.getAudioTracks().forEach((t) => {
-      t.enabled = !t.enabled;
-    });
-    setAudioMuted((m) => !m);
+  const [spotlight, setSpotlight] = useState<string | null>(null);
+  const [status, setStatus] = useState<
+    "starting" | "connecting" | "connected" | "error"
+  >("starting");
+  const [error, setError] = useState("");
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [leaving, setLeaving] = useState(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showControls = useCallback(() => {
+    setControlsVisible(true);
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+    }
+    hideTimer.current = setTimeout(() => {
+      if (!leavingRef.current) {
+        setControlsVisible(false);
+      }
+    }, 3500);
   }, []);
-
-  const toggleVideo = useCallback(() => {
-    streamRef.current?.getVideoTracks().forEach((t) => {
-      t.enabled = !t.enabled;
-    });
-    setVideoOff((v) => !v);
+  const removePeer = useCallback((id: string) => {
+    const pc = peersRef.current.get(id);
+    if (pc) {
+      pc.ontrack = null;
+      pc.onicecandidate = null;
+      pc.onconnectionstatechange = null;
+      pc.close();
+      peersRef.current.delete(id);
+    }
+    iceRef.current.delete(id);
+    namesRef.current.delete(id);
+    setPeers((current) => current.filter((peer) => peer.id !== id));
+    setSpotlight((current) => (current === id ? null : current));
   }, []);
-
-  const leaveCall = useCallback(() => {
-    wsRef.current?.close();
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    pcMap.current.forEach((pc) => pc.close());
-    window.location.reload();
+  const send = useCallback((message: object) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      return false;
+    }
+    ws.send(JSON.stringify(message));
+    return true;
   }, []);
-
-  // ── Remove peer ────────────────────────────────────────────────────────────
-
-  const removePeer = useCallback((peerId: string) => {
-    pcMap.current.get(peerId)?.close();
-    pcMap.current.delete(peerId);
-    iceCandidateBuffer.current.delete(peerId);
-    peerNames.current.delete(peerId);
-
-    // FIX: Functional state update
-    setRemotePeers((prev) => {
-      const next = prev.filter((p) => p.id !== peerId);
-      setParticipantCount(next.length + 1);
-      return next;
-    });
-
-    setSpotlightId((id) => (id === peerId ? null : id));
-  }, []);
-
-  // ── PeerConnection factory ─────────────────────────────────────────────────
-
-  const createPC = useCallback(
-    (peerId: string, peerName: string): RTCPeerConnection => {
-      peerNames.current.set(peerId, peerName); // Store name immediately
-
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-
-      // Add local tracks
-      streamRef.current
-        ?.getTracks()
-        .forEach((track) => pc.addTrack(track, streamRef.current!));
-
-      // Trickle ICE
-      pc.onicecandidate = (e) => {
-        if (e.candidate && wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(
-            JSON.stringify({
-              type: "signal",
-              to: peerId,
-              from: myId,
-              name: myName, // Include our name
-              data: { candidate: e.candidate.toJSON() },
-            })
-          );
-        }
-      };
-
-      // Remote stream
-      pc.ontrack = (e) => {
-        const stream = e.streams[0];
-        if (!stream) return;
-
-        // FIX: Use functional update to avoid stale state closures
-        setRemotePeers((prev) => {
-          const existing = prev.find((p) => p.id === peerId);
-          if (existing) {
-            return prev.map((p) => (p.id === peerId ? { ...p, stream } : p));
-          }
-          return [
-            ...prev,
-            {
-              id: peerId,
-              stream,
-              name: peerNames.current.get(peerId) || "Guest",
-            },
-          ];
-        });
-        setParticipantCount((n) => pcMap.current.size + 1);
-      };
-
-      pc.onconnectionstatechange = () => {
-        if (
-          pc.connectionState === "failed" ||
-          pc.connectionState === "disconnected"
-        ) {
-          removePeer(peerId);
-        }
-      };
-
-      pcMap.current.set(peerId, pc);
-      return pc;
-    },
-    [myId, myName, removePeer]
-  );
-
-  // ── Drain buffered ICE candidates ─────────────────────────────────────────
-
-  const drainCandidates = useCallback(
-    async (peerId: string, pc: RTCPeerConnection) => {
-      const buffered = iceCandidateBuffer.current.get(peerId) ?? [];
-      for (const c of buffered) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(c));
-        } catch {
-          // ignore stale candidates
+  const createPeer = useCallback(
+    (peerId: string) => {
+      const existing = peersRef.current.get(peerId);
+      if (existing && existing.connectionState !== "closed") {
+        return existing;
+      }
+      if (existing) {
+        existing.close();
+        peersRef.current.delete(peerId);
+      }
+      const pc = new RTCPeerConnection({ iceServers: ICE });
+      const stream = streamRef.current;
+      if (stream) {
+        for (const track of stream.getTracks()) {
+          pc.addTrack(track, stream);
         }
       }
-      iceCandidateBuffer.current.delete(peerId);
-    },
-    []
-  );
-
-  // ── Offer / Answer ─────────────────────────────────────────────────────────
-
-  const createOffer = useCallback(
-    async (peerId: string, peerName: string) => {
-      if (pcMap.current.has(peerId)) return;
-      const pc = createPC(peerId, peerName);
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      wsRef.current?.send(
-        JSON.stringify({
+      pc.onicecandidate = (event) => {
+        if (!event.candidate || leavingRef.current) {
+          return;
+        }
+        send({
           type: "signal",
           to: peerId,
           from: myId,
-          name: myName, // Include our name
-          data: { sdp: { type: offer.type, sdp: offer.sdp } },
-        })
-      );
+          name: myName,
+          data: { candidate: event.candidate.toJSON() },
+        });
+      };
+      pc.ontrack = (event) => {
+        if (peerId === myId || leavingRef.current) {
+          return;
+        }
+
+        const remoteStream = event.streams[0] || new MediaStream([event.track]);
+
+        const name = namesRef.current.get(peerId) || "Guest";
+
+        setPeers((current) => {
+          const existingPeer = current.find((peer) => peer.id === peerId);
+
+          if (existingPeer) {
+            return current.map((peer) =>
+              peer.id === peerId
+                ? {
+                    ...peer,
+                    stream: remoteStream,
+                    name,
+                    connected: true,
+                  }
+                : peer
+            );
+          }
+
+          return [
+            ...current,
+            {
+              id: peerId,
+              name,
+              stream: remoteStream,
+              connected: true,
+            },
+          ];
+        });
+
+        setStatus("connected");
+      };
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "failed") {
+          removePeer(peerId);
+          return;
+        }
+        if (pc.connectionState === "closed") {
+          removePeer(peerId);
+          return;
+        }
+        if (pc.connectionState === "connected") {
+          setStatus("connected");
+        }
+      };
+      peersRef.current.set(peerId, pc);
+      return pc;
     },
-    [createPC, myId, myName]
+    [myId, myName, removePeer, send]
   );
-
-  // ── Signal handler ─────────────────────────────────────────────────────────
-
-  const handleSignal = useCallback(
-    async (peerId: string, peerName: string, data: any) => {
-      let pc = pcMap.current.get(peerId);
-
-      if (!pc) {
-        pc = createPC(peerId, peerName);
+  const flushIce = useCallback(
+    async (peerId: string, pc: RTCPeerConnection) => {
+      const candidates = iceRef.current.get(peerId);
+      if (!candidates) {
+        return;
       }
-
+      iceRef.current.delete(peerId);
+      for (const candidate of candidates) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch {}
+      }
+    },
+    []
+  );
+  const createOffer = useCallback(
+    async (peerId: string) => {
+      let pc = peersRef.current.get(peerId);
+      if (
+        pc &&
+        pc.connectionState !== "closed" &&
+        pc.signalingState !== "stable"
+      ) {
+        return;
+      }
+      if (!pc) {
+        pc = createPeer(peerId);
+      }
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        send({
+          type: "signal",
+          to: peerId,
+          from: myId,
+          name: myName,
+          data: { sdp: { type: offer.type, sdp: offer.sdp } },
+        });
+      } catch {
+        removePeer(peerId);
+      }
+    },
+    [createPeer, myId, myName, removePeer, send]
+  );
+  const handleSignal = useCallback(
+    async (peerId: string, data: SignalMessage["data"]) => {
+      if (leavingRef.current || !data) {
+        return;
+      }
+      let pc = peersRef.current.get(peerId);
+      if (!pc || pc.connectionState === "closed") {
+        pc = createPeer(peerId);
+      }
       if (data.sdp) {
-        const desc = new RTCSessionDescription(data.sdp);
-        await pc.setRemoteDescription(desc);
-
-        // Drain any buffered candidates now that remote desc is set
-        await drainCandidates(peerId, pc);
-
-        if (desc.type === "offer") {
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          wsRef.current?.send(
-            JSON.stringify({
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+          await flushIce(peerId, pc);
+          if (data.sdp.type === "offer") {
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            send({
               type: "signal",
               to: peerId,
               from: myId,
-              name: myName, // Include our name
+              name: myName,
               data: { sdp: { type: answer.type, sdp: answer.sdp } },
-            })
-          );
+            });
+          }
+        } catch {
+          removePeer(peerId);
         }
       }
-
       if (data.candidate) {
         if (pc.remoteDescription) {
           try {
             await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-          } catch {
-            // ignore
-          }
+          } catch {}
         } else {
-          // Buffer until remote description is set
-          const buf = iceCandidateBuffer.current.get(peerId) ?? [];
-          buf.push(data.candidate);
-          iceCandidateBuffer.current.set(peerId, buf);
+          const candidates = iceRef.current.get(peerId) || [];
+          candidates.push(data.candidate);
+          iceRef.current.set(peerId, candidates);
         }
       }
     },
-    [createPC, drainCandidates, myId, myName]
+    [createPeer, flushIce, myId, myName, removePeer, send]
   );
-
-  // ── Init ───────────────────────────────────────────────────────────────────
-
+  const finishLeave = useCallback(() => {
+    if (onLeave) {
+      onLeave();
+      return;
+    }
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.href = "/";
+  }, [onLeave]);
+  const leave = useCallback(() => {
+    if (leavingRef.current) {
+      return;
+    }
+    leavingRef.current = true;
+    setLeaving(true);
+    send({ type: "leave", room, peerId: myId, name: myName });
+    const ws = wsRef.current;
+    if (ws) {
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onerror = null;
+      ws.onclose = null;
+      ws.close();
+      wsRef.current = null;
+    }
+    for (const pc of peersRef.current.values()) {
+      pc.ontrack = null;
+      pc.onicecandidate = null;
+      pc.onconnectionstatechange = null;
+      pc.close();
+    }
+    peersRef.current.clear();
+    namesRef.current.clear();
+    iceRef.current.clear();
+    const stream = streamRef.current;
+    if (stream) {
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+    }
+    streamRef.current = null;
+    setLocalStream(null);
+    setPeers([]);
+    finishLeave();
+  }, [finishLeave, myId, myName, room, send]);
+  const toggleAudio = useCallback(() => {
+    const tracks = streamRef.current?.getAudioTracks() || [];
+    if (!tracks.length) {
+      return;
+    }
+    const nextMuted = !audioMuted;
+    for (const track of tracks) {
+      track.enabled = !nextMuted;
+    }
+    setAudioMuted(nextMuted);
+  }, [audioMuted]);
+  const toggleVideo = useCallback(() => {
+    const tracks = streamRef.current?.getVideoTracks() || [];
+    if (!tracks.length) {
+      return;
+    }
+    const nextOff = !videoOff;
+    for (const track of tracks) {
+      track.enabled = !nextOff;
+    }
+    setVideoOff(nextOff);
+  }, [videoOff]);
   useEffect(() => {
+    mountedRef.current = true;
     let cancelled = false;
-
-    const init = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: "user",
-        },
-        audio: { echoCancellation: true, noiseSuppression: true },
-      });
-
-      if (cancelled) {
-        stream.getTracks().forEach((t) => t.stop());
+    const start = async () => {
+      setStatus("starting");
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: "user",
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+      } catch {
+        if (!mountedRef.current) {
+          return;
+        }
+        setStatus("error");
+        setError("Camera or microphone permission was denied.");
         return;
       }
-
-      streamRef.current = stream;
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+      if (cancelled || !mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
       }
-
+      streamRef.current = stream;
+      setLocalStream(stream);
+      setStatus("connecting");
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
-
       ws.onopen = () => {
+        if (cancelled || leavingRef.current || wsRef.current !== ws) {
+          return;
+        }
         ws.send(
-          JSON.stringify({
-            type: "join",
-            peerId: myId,
-            name: myName,
-            room,
-          })
+          JSON.stringify({ type: "join", room, peerId: myId, name: myName })
         );
-        setConnected(true);
       };
-
-      ws.onclose = () => setConnected(false);
-
-      ws.onmessage = async (ev) => {
-        const msg: WSMsg = JSON.parse(ev.data);
-        switch (msg.type) {
-          case "existing-peers": {
-            const peers: { id: string; name: string }[] = msg.data ?? [];
-            for (const peer of peers) {
-              if (peer.id !== myId) {
-                await createOffer(peer.id, peer.name ?? peer.id);
-              }
+      ws.onmessage = async (event) => {
+        if (cancelled || leavingRef.current || wsRef.current !== ws) {
+          return;
+        }
+        let message: SignalMessage;
+        try {
+          message = JSON.parse(event.data);
+        } catch {
+          return;
+        }
+        if (message.type === "existing-peers") {
+          const existing = Array.isArray(message.data) ? message.data : [];
+          for (const peer of existing as Array<{ id: string; name: string }>) {
+            if (!peer.id || peer.id === myId) {
+              continue;
             }
-            break;
+            namesRef.current.set(peer.id, peer.name || "Guest");
+            await createOffer(peer.id);
           }
-          case "peer-joined": {
-            // A new peer joined, they will send an offer soon. Record their name.
-            if (msg.from) {
-              peerNames.current.set(msg.from, msg.name || "Guest");
-            }
-            break;
+          return;
+        }
+        if (message.type === "peer-joined") {
+          if (!message.from || message.from === myId) {
+            return;
           }
-          case "signal": {
-            if (msg.from && msg.data) {
-              const peerName =
-                msg.name || peerNames.current.get(msg.from) || "Remote";
-              await handleSignal(msg.from, peerName, msg.data);
-            }
-            break;
+          namesRef.current.set(message.from, message.name || "Guest");
+          return;
+        }
+        if (message.type === "signal") {
+          if (!message.from || message.from === myId) {
+            return;
           }
-          case "peer-left": {
-            if (msg.from) removePeer(msg.from);
-            break;
+          if (message.name) {
+            namesRef.current.set(message.from, message.name);
+          }
+          await handleSignal(message.from, message.data);
+          return;
+        }
+        if (message.type === "peer-left") {
+          if (message.from) {
+            removePeer(message.from);
           }
         }
       };
+      ws.onerror = () => {
+        if (!cancelled && !leavingRef.current && mountedRef.current) {
+          setStatus("error");
+          setError("Unable to connect to the call server.");
+        }
+      };
+      ws.onclose = () => {
+        if (!cancelled && !leavingRef.current && mountedRef.current) {
+          setStatus("error");
+          setError("Connection to the call server was lost.");
+        }
+      };
     };
-
-    init().catch(console.error);
-
+    start();
     return () => {
       cancelled = true;
-      wsRef.current?.close();
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      pcMap.current.forEach((pc) => pc.close());
+      mountedRef.current = false;
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current);
+      }
+      const ws = wsRef.current;
+      if (ws) {
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
+        ws.close();
+        wsRef.current = null;
+      }
+      for (const pc of peersRef.current.values()) {
+        pc.close();
+      }
+      peersRef.current.clear();
+      namesRef.current.clear();
+      iceRef.current.clear();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Notice empty array is safe now!
-
-  // ─── Layout logic ──────────────────────────────────────────────────────────
-
-  const totalPeers = remotePeers.length + 1; // +1 for local
-
-  // Determine spotlight peer
-  const spotlightPeer =
-    spotlightId === null
-      ? null // local is spotlight
-      : remotePeers.find((p) => p.id === spotlightId) ?? null;
-
-  const showStripLayout = totalPeers > 2;
-
-  // ─── Render ────────────────────────────────────────────────────────────────
-
+  }, [createOffer, handleSignal, myId, myName, removePeer, room]);
+  const total = peers.length + 1;
+  const spotlightPeer = spotlight
+    ? peers.find((peer) => peer.id === spotlight) || null
+    : null;
+  const gridColumns =
+    total === 1
+      ? "1fr"
+      : total === 2
+      ? "1fr 1fr"
+      : total <= 4
+      ? "1fr 1fr"
+      : total <= 6
+      ? "1fr 1fr 1fr"
+      : "repeat(4,1fr)";
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        background: "#0d0d1a",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        color: "#fff",
-        userSelect: "none",
-      }}
-    >
-      {/* ── Header ── */}
+    <>
+      {" "}
+      <style>{` @keyframes vcFade { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } } @keyframes vcPulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } } .vc-root { position: fixed; inset: 0; z-index: 9999; overflow: hidden; background: ${C.bg}; font-family: Inter,system-ui,sans-serif; color: ${C.text}; } .vc-tile { animation: vcFade .25s ease both; } .vc-control-bar { transition: opacity .25s ease, transform .25s ease; } .vc-control-bar.hidden { opacity: 0; transform: translate(-50%,20px); pointer-events: none; } .vc-dot { animation: vcPulse 1.6s ease-in-out infinite; } .vc-dot:nth-child(2) { animation-delay: .2s; } .vc-dot:nth-child(3) { animation-delay: .4s; } @media (max-width: 600px) { .vc-controls { gap: 6px !important; padding: 8px 10px !important; } .vc-controls button { min-width: 58px !important; height: 56px !important; padding: 8px 10px !important; } } `}</style>{" "}
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "12px 20px",
-          borderBottom: "1px solid #1e1e38",
-          background: "#0d0d1a",
-          flexShrink: 0,
-        }}
+        className="vc-root"
+        onMouseMove={showControls}
+        onClick={showControls}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              background: connected ? "#22c55e" : "#ef4444",
-              boxShadow: connected ? "0 0 6px #22c55e" : "0 0 6px #ef4444",
-            }}
-          />
-          <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 500 }}>
-            {connected ? "Connected" : "Connecting..."}
-          </span>
-        </div>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 700,
-            letterSpacing: "0.05em",
-            color: "#e2e8f0",
-          }}
-        >
-          Room: <span style={{ color: "#60a5fa" }}>{room}</span>
-        </div>
-        <div style={{ fontSize: 13, color: "#9ca3af" }}>
-          👥 {participantCount} participant{participantCount !== 1 ? "s" : ""}
-        </div>
-      </div>
-
-      {/* ── Main video area ── */}
-      <div
-        style={{ flex: 1, display: "flex", gap: 8, padding: 12, minHeight: 0 }}
-      >
-        {showStripLayout ? (
-          // Spotlight + strip layout (3+ participants)
-          <>
-            {/* Spotlight */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <VideoTile
-                stream={
-                  spotlightPeer ? spotlightPeer.stream : streamRef.current
-                }
-                name={spotlightPeer ? spotlightPeer.name : myName}
-                isLocal={!spotlightPeer}
-                muted={!spotlightPeer}
-                audioMuted={!spotlightPeer && audioMuted}
-                videoOff={!spotlightPeer && videoOff}
-                isSpotlight
-              />
-            </div>
-
-            {/* Right strip */}
-            <div
-              style={{
-                width: 180,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                overflowY: "auto",
-                flexShrink: 0,
-              }}
-            >
-              {/* Local tile in strip */}
-              <div
-                style={{ height: 130, flexShrink: 0 }}
-                onClick={() => setSpotlightId(null)}
-              >
-                <VideoTile
-                  stream={streamRef.current}
-                  name={myName}
-                  isLocal
-                  muted
-                  audioMuted={audioMuted}
-                  videoOff={videoOff}
-                  isSpotlight={spotlightId === null}
-                  onClick={() => setSpotlightId(null)}
-                />
-              </div>
-
-              {/* Remote tiles in strip */}
-              {remotePeers.map((peer) => (
-                <div key={peer.id} style={{ height: 130, flexShrink: 0 }}>
-                  <VideoTile
-                    stream={peer.stream}
-                    name={peer.name}
-                    isSpotlight={spotlightId === peer.id}
-                    onClick={() => setSpotlightId(peer.id)}
-                  />
-                </div>
-              ))}
-            </div>
-          </>
-        ) : totalPeers === 1 ? (
-          // Solo — show self large
-          <VideoTile
-            stream={streamRef.current}
-            name={myName}
-            isLocal
-            muted
-            audioMuted={audioMuted}
-            videoOff={videoOff}
-          />
-        ) : (
-          // 2-person — side-by-side
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 8,
-              width: "100%",
-            }}
-          >
-            <VideoTile
-              stream={streamRef.current}
-              name={myName}
-              isLocal
-              muted
-              audioMuted={audioMuted}
-              videoOff={videoOff}
-              onClick={() => setSpotlightId(null)}
-            />
-            {remotePeers.map((peer) => (
-              <VideoTile
-                key={peer.id}
-                stream={peer.stream}
-                name={peer.name}
-                onClick={() => setSpotlightId(peer.id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Waiting overlay ── */}
-      {remotePeers.length === 0 && (
+        {" "}
         <div
           style={{
             position: "absolute",
             inset: 0,
             pointerEvents: "none",
+            background:
+              "radial-gradient(ellipse 80% 60% at 15% 10%,rgba(79,142,247,.07),transparent 60%),radial-gradient(ellipse 70% 50% at 90% 90%,rgba(142,79,247,.06),transparent 60%)",
+          }}
+        />{" "}
+        <div
+          style={{
+            position: "absolute",
+            top: 18,
+            left: 20,
+            zIndex: 20,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            zIndex: 5,
+            gap: 9,
+            padding: "8px 12px",
+            borderRadius: 14,
+            background: C.glass,
+            border: `1px solid ${C.border}`,
+            backdropFilter: "blur(20px)",
           }}
         >
-          <div
+          {" "}
+          <span
             style={{
-              background: "rgba(0,0,0,0.65)",
-              backdropFilter: "blur(8px)",
-              borderRadius: 16,
-              padding: "24px 36px",
-              textAlign: "center",
-              border: "1px solid rgba(255,255,255,0.08)",
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background:
+                status === "error"
+                  ? C.danger
+                  : status === "connected"
+                  ? C.success
+                  : C.accent,
+              boxShadow:
+                status === "error"
+                  ? `0 0 10px ${C.danger}`
+                  : `0 0 10px ${status === "connected" ? C.success : C.accent}`,
+            }}
+          />{" "}
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: ".08em",
+              textTransform: "uppercase",
+              color: C.muted,
             }}
           >
+            {" "}
+            {room}{" "}
+          </span>{" "}
+        </div>{" "}
+        <div
+          style={{
+            position: "absolute",
+            top: 18,
+            right: 20,
+            zIndex: 20,
+            padding: "8px 12px",
+            borderRadius: 14,
+            background: C.glass,
+            border: `1px solid ${C.border}`,
+            backdropFilter: "blur(20px)",
+            color: C.muted,
+            fontSize: 11,
+            fontWeight: 800,
+            letterSpacing: ".06em",
+            textTransform: "uppercase",
+          }}
+        >
+          {" "}
+          {total} {total === 1 ? "person" : "people"}{" "}
+        </div>{" "}
+        {status === "error" ? (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 24,
+            }}
+          >
+            {" "}
             <div
               style={{
-                width: 36,
-                height: 36,
-                border: "3px solid #2563eb",
-                borderTopColor: "transparent",
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-                margin: "0 auto 12px",
-              }}
-            />
-            <p
-              style={{
-                margin: 0,
-                fontSize: 15,
-                color: "#e2e8f0",
-                fontWeight: 500,
+                width: "min(420px,100%)",
+                padding: 30,
+                borderRadius: 24,
+                background: C.glass,
+                border: `1px solid ${C.border}`,
+                backdropFilter: "blur(25px)",
+                textAlign: "center",
               }}
             >
-              Waiting for others to join…
-            </p>
-            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6b7280" }}>
-              Share this room link to invite participants
-            </p>
+              {" "}
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  margin: "0 auto 18px",
+                  borderRadius: "50%",
+                  background: "rgba(247,79,106,.14)",
+                  color: C.danger,
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                {" "}
+                <PhoneOffIcon size={23} />{" "}
+              </div>{" "}
+              <h2 style={{ fontSize: 19, marginBottom: 8, fontWeight: 800 }}>
+                {" "}
+                Call unavailable{" "}
+              </h2>{" "}
+              <p
+                style={{
+                  color: C.muted,
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                  marginBottom: 22,
+                }}
+              >
+                {" "}
+                {error}{" "}
+              </p>{" "}
+              <button
+                type="button"
+                onClick={leave}
+                style={{
+                  border: 0,
+                  borderRadius: 13,
+                  padding: "11px 18px",
+                  background: C.danger,
+                  color: "#fff",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                {" "}
+                Go back{" "}
+              </button>{" "}
+            </div>{" "}
           </div>
-        </div>
-      )}
-
-      {/* ── Controls bar ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          padding: "14px 20px",
-          borderTop: "1px solid #1e1e38",
-          background: "#0d0d1a",
-          flexShrink: 0,
-        }}
-      >
-        <ControlBtn
-          icon={audioMuted ? "🔇" : "🎙️"}
-          label={audioMuted ? "Unmute" : "Mute"}
-          active={!audioMuted}
-          onClick={toggleAudio}
-        />
-        <ControlBtn
-          icon={videoOff ? "📷" : "📹"}
-          label={videoOff ? "Start Video" : "Stop Video"}
-          active={!videoOff}
-          onClick={toggleVideo}
-        />
-        <ControlBtn
-          icon="💬"
-          label="Chat"
-          onClick={() => {
-            /* wire up chat panel */
-          }}
-        />
-        <ControlBtn
-          icon="👥"
-          label="Participants"
-          onClick={() => {
-            /* wire up participants panel */
-          }}
-        />
-        <ControlBtn
-          icon="📤"
-          label="Share"
-          onClick={() => {
-            navigator.clipboard?.writeText(window.location.href);
-          }}
-        />
-        <ControlBtn icon="📵" label="Leave" danger onClick={leaveCall} />
-      </div>
-
-      {/* Spinner keyframe */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+        ) : (
+          <>
+            {" "}
+            {spotlightPeer ? (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  gap: 12,
+                  padding: "62px 14px 100px",
+                  zIndex: 1,
+                }}
+              >
+                {" "}
+                <div className="vc-tile" style={{ flex: 1, minWidth: 0 }}>
+                  {" "}
+                  <Tile
+                    stream={spotlightPeer.stream}
+                    name={spotlightPeer.name}
+                    id={spotlightPeer.id}
+                    spotlight
+                    onClick={() => setSpotlight(null)}
+                  />{" "}
+                </div>{" "}
+                <div
+                  style={{
+                    width: 170,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 9,
+                    overflowY: "auto",
+                  }}
+                >
+                  {" "}
+                  <div style={{ height: 125, flexShrink: 0 }}>
+                    {" "}
+                    <Tile
+                      stream={localStream}
+                      name={myName}
+                      id={myId}
+                      local
+                      muted={audioMuted}
+                      videoOff={videoOff}
+                      onClick={() => setSpotlight(null)}
+                    />{" "}
+                  </div>{" "}
+                  {peers
+                    .filter((peer) => peer.id !== spotlight)
+                    .map((peer) => (
+                      <div key={peer.id} style={{ height: 125, flexShrink: 0 }}>
+                        {" "}
+                        <Tile
+                          stream={peer.stream}
+                          name={peer.name}
+                          id={peer.id}
+                          onClick={() => setSpotlight(peer.id)}
+                        />{" "}
+                      </div>
+                    ))}{" "}
+                </div>{" "}
+              </div>
+            ) : (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "grid",
+                  gridTemplateColumns: gridColumns,
+                  gridAutoRows: total <= 2 ? "1fr" : undefined,
+                  gap: 10,
+                  padding: "62px 14px 100px",
+                  zIndex: 1,
+                }}
+              >
+                {" "}
+                <div className="vc-tile">
+                  {" "}
+                  <Tile
+                    stream={localStream}
+                    name={myName}
+                    id={myId}
+                    local
+                    muted={audioMuted}
+                    videoOff={videoOff}
+                  />{" "}
+                </div>{" "}
+                {peers.map((peer) => (
+                  <div key={peer.id} className="vc-tile">
+                    {" "}
+                    <Tile
+                      stream={peer.stream}
+                      name={peer.name}
+                      id={peer.id}
+                      onClick={() => setSpotlight(peer.id)}
+                    />{" "}
+                  </div>
+                ))}{" "}
+              </div>
+            )}{" "}
+            {peers.length === 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  bottom: 155,
+                  transform: "translateX(-50%)",
+                  zIndex: 3,
+                  textAlign: "center",
+                  pointerEvents: "none",
+                }}
+              >
+                {" "}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: 7,
+                    marginBottom: 12,
+                  }}
+                >
+                  {" "}
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="vc-dot"
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: C.accent,
+                      }}
+                    />
+                  ))}{" "}
+                </div>{" "}
+                <div
+                  style={{
+                    color: C.muted,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    letterSpacing: ".08em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {" "}
+                  Waiting for others{" "}
+                </div>{" "}
+              </div>
+            )}{" "}
+            <div
+              className={`vc-control-bar ${controlsVisible ? "" : "hidden"}`}
+              style={{
+                position: "absolute",
+                left: "50%",
+                bottom: 22,
+                zIndex: 30,
+              }}
+            >
+              {" "}
+              <div
+                className="vc-controls"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "9px 12px",
+                  borderRadius: 23,
+                  background: C.glass,
+                  border: `1px solid ${C.border}`,
+                  boxShadow: "0 15px 50px rgba(0,0,0,.5)",
+                  backdropFilter: "blur(25px)",
+                }}
+              >
+                {" "}
+                <ControlButton
+                  icon={audioMuted ? <MicOffIcon /> : <MicIcon />}
+                  label={audioMuted ? "Unmute" : "Mute"}
+                  active={!audioMuted}
+                  disabled={leaving}
+                  onClick={toggleAudio}
+                />{" "}
+                <ControlButton
+                  icon={videoOff ? <CameraOffIcon /> : <CameraIcon />}
+                  label={videoOff ? "Camera" : "Camera"}
+                  active={!videoOff}
+                  disabled={leaving}
+                  onClick={toggleVideo}
+                />{" "}
+                <div
+                  style={{
+                    width: 1,
+                    height: 35,
+                    background: C.border,
+                    margin: "0 2px",
+                  }}
+                />{" "}
+                <ControlButton
+                  icon={<PhoneOffIcon />}
+                  label={leaving ? "Leaving" : "Leave"}
+                  danger
+                  disabled={leaving}
+                  onClick={leave}
+                />{" "}
+              </div>{" "}
+            </div>{" "}
+          </>
+        )}{" "}
+      </div>{" "}
+    </>
   );
 };
-
 export default VideoCall;

@@ -1,145 +1,247 @@
-import { FormEvent, useState, useEffect } from "react";
-import Select from "react-select";
-import { updateGroup } from "../firebase/db";
+import { FormEvent, useEffect, useState } from "react";
+import { createChannel } from "../firebase/db";
+
+interface ChannelsMenuProps {
+  channels: string[];
+  id: string;
+  setChannel: (channel: string) => void;
+  selectedChannel: string;
+  isEditor: boolean;
+}
 
 const ChannelsMenu = ({
   channels,
   id,
   setChannel,
+  selectedChannel,
   isEditor,
-}: {
-  channels: any;
-  id: string;
-  setChannel: any;
-  isEditor: boolean;
-}) => {
-  const mapChannels = (channels: any) =>
-    channels.map((ch: string) => ({ label: ch, value: ch }));
-
-  const [options, setOptions] = useState<any>(mapChannels(channels));
+}: ChannelsMenuProps) => {
   const [showModal, setShowModal] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
-  const [value, setValue] = useState<any>("Main");
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
 
-  const darkModeStyles: any = {
-    control: (provided: any) => ({
-      ...provided,
-      backgroundColor: "#2d3748",
-      color: "white",
-      border: "1px solid #4a5568",
-    }),
-    menu: (provided: any) => ({
-      ...provided,
-      backgroundColor: "#2d3748",
-      color: "white",
-    }),
-    option: (provided: any, state: any) => ({
-      ...provided,
-      backgroundColor: state.isSelected ? "#718096" : "#2d3748",
-      color: "white",
-    }),
-    placeholder: (provided: any) => ({
-      ...provided,
-      color: "#a0aec0",
-    }),
-    singleValue: (provided: any) => ({
-      ...provided,
-      color: "white",
-    }),
+  useEffect(() => {
+    const lastChannel = localStorage.getItem(`lastChannel_${id}`);
+
+    if (
+      lastChannel &&
+      channels.some(
+        (channel) => channel.toLowerCase() === lastChannel.toLowerCase()
+      )
+    ) {
+      setChannel(lastChannel);
+    } else if (channels.length > 0) {
+      setChannel(
+        channels.some((channel) => channel === "Main") ? "Main" : channels[0]
+      );
+    }
+  }, [id, channels, setChannel]);
+
+  const selectChannel = (channel: string) => {
+    setChannel(channel);
+    localStorage.setItem(`lastChannel_${id}`, channel);
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const closeModal = () => {
+    if (creating) {
+      return;
+    }
 
-    if (channels.indexOf(newChannelName) === -1) {
-      // no such channel yet?
-      await updateGroup(id, { channels: [...channels, newChannelName] });
+    setShowModal(false);
+    setNewChannelName("");
+    setError("");
+  };
 
-      // Update options using the functional form of setOptions
-      setOptions((prevOptions: any) => [
-        ...prevOptions,
-        { label: newChannelName, value: newChannelName },
-      ]);
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-      // Reset the input and close the modal
-      setNewChannelName("");
-      setShowModal(false);
-    } else {
-      setShowModal(false);
-      setNewChannelName("");
-      alert("Can't create 2 channels with the same name!");
+    const name = newChannelName.trim();
+
+    if (!name) {
+      setError("Channel name cannot be empty.");
+      return;
+    }
+
+    if (name.length > 32) {
+      setError("Channel name cannot exceed 32 characters.");
+      return;
+    }
+
+    if (name.includes("/")) {
+      setError("Channel names cannot contain '/'.");
+      return;
+    }
+
+    if (
+      channels.some((channel) => channel.toLowerCase() === name.toLowerCase())
+    ) {
+      setError("A channel with this name already exists.");
+      return;
+    }
+
+    setCreating(true);
+    setError("");
+
+    try {
+      await createChannel(id, name);
+
+      selectChannel(name);
+      closeModal();
+    } catch (error: any) {
+      setError(error?.message || "Failed to create channel.");
+    } finally {
+      setCreating(false);
     }
   };
 
-  useEffect(() => {
-    // Retrieve the last channel for the specific group from localStorage
-    const lastChannelKey = `lastChannel_${id}`;
-    const lastChannel = localStorage.getItem(lastChannelKey) || "Main";
-    const setter = {
-      value: lastChannel,
-      label: lastChannel,
-    };
-    setChannel(setter);
-    setValue(setter);
-  }, [id]);
-
   return (
-    <div className="flex">
-      {isEditor && (
-        <button
-          className="bg-gray-700 text-white py-2 px-1 rounded-xl border border-r-0 border-gray-700 sm:px-3"
-          onClick={() => setShowModal(true)}
-        >
-          +
-        </button>
-      )}
+    <>
+      <aside className="flex h-full w-64 shrink-0 flex-col border-r border-white/10 bg-gray-950/70">
+        <div className="border-b border-white/10 px-5 py-5">
+          <div className="text-xs font-semibold uppercase tracking-widest text-white/40">
+            Channels
+          </div>
+        </div>
 
-      <Select
-        options={options}
-        isSearchable={true}
-        placeholder={value}
-        styles={darkModeStyles}
-        className="rounded-r"
-        onChange={(selected: any) => {
-          setValue(selected); // Update the value state with the selected channel
-          setChannel(selected);
-          const lastChannelKey = `lastChannel_${id}`;
-          localStorage.setItem(lastChannelKey, selected.value);
-        }}
-        value={value}
-      />
+        <div className="flex-1 overflow-y-auto px-3 py-3">
+          <div className="space-y-1">
+            {channels.map((channel) => {
+              const selected = channel === selectedChannel;
 
-      {showModal && (
-        <form
-          onSubmit={handleSubmit}
-          className="fixed inset-0 z-50 flex items-center justify-center"
-        >
-          <div className="absolute inset-0 bg-black opacity-50"></div>
-          <div className="bg-gray-800 p-8 rounded shadow-lg z-10">
-            <h2 className="text-white text-xl mb-4">Create a new channel</h2>
-            <input
-              type="text"
-              value={newChannelName}
-              onChange={(e) => setNewChannelName(e.target.value)}
-              className="w-full border p-2 mb-4 bg-gray-700 text-white"
-              placeholder="Channel Name"
-            />
+              return (
+                <button
+                  key={channel}
+                  type="button"
+                  onClick={() => selectChannel(channel)}
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all ${
+                    selected
+                      ? "bg-indigo-500/15 text-white shadow-sm"
+                      : "text-white/50 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span
+                    className={`text-lg leading-none ${
+                      selected
+                        ? "text-indigo-400"
+                        : "text-white/30 group-hover:text-white/60"
+                    }`}
+                  >
+                    #
+                  </span>
+
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {channel}
+                  </span>
+
+                  {selected && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {isEditor && (
+          <div className="border-t border-white/10 p-3">
             <button
-              type="submit"
-              className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+              type="button"
+              onClick={() => {
+                setError("");
+                setShowModal(true);
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
             >
-              Create
-            </button>
-            <button
-              className="ml-2 text-gray-400 hover:text-gray-100"
-              onClick={() => setShowModal(false)}
-            >
-              Cancel
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/5 text-lg">
+                +
+              </span>
+
+              <span>Create channel</span>
             </button>
           </div>
-        </form>
+        )}
+      </aside>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={closeModal}
+            className="absolute inset-0 cursor-default bg-black/70 backdrop-blur-sm"
+          />
+
+          <form
+            onSubmit={handleSubmit}
+            className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-gray-900 p-6 shadow-2xl"
+          >
+            <div className="mb-6">
+              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-xl text-indigo-400">
+                #
+              </div>
+
+              <h2 className="text-xl font-bold text-white">Create a channel</h2>
+
+              <p className="mt-1 text-sm text-white/40">
+                Add a new place for conversations in this group.
+              </p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="channel-name"
+                className="mb-2 block text-sm font-medium text-white/70"
+              >
+                Channel name
+              </label>
+
+              <input
+                id="channel-name"
+                type="text"
+                value={newChannelName}
+                onChange={(event) => {
+                  setNewChannelName(event.target.value);
+                  setError("");
+                }}
+                placeholder="e.g. gaming"
+                maxLength={32}
+                autoFocus
+                disabled={creating}
+                className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition placeholder:text-white/25 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 disabled:opacity-50"
+              />
+
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-xs text-red-400">{error}</span>
+
+                <span className="text-xs text-white/25">
+                  {newChannelName.length}/32
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={creating}
+                className="flex-1 rounded-xl border border-white/10 px-4 py-3 font-semibold text-white/60 transition hover:bg-white/5 hover:text-white disabled:opacity-40"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={!newChannelName.trim() || creating}
+                className="flex-1 rounded-xl bg-indigo-500 px-4 py-3 font-semibold text-white transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {creating ? "Creating..." : "Create channel"}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
-    </div>
+    </>
   );
 };
 

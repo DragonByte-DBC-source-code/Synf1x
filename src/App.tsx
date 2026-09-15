@@ -26,14 +26,44 @@ const App = () => {
     checkout: "/checkout",
   };
 
+  const checkProStatus = () => {
+    if (localStorage.getItem("isPro") === "true" && !proAlertShown) {
+      setProAlertShown(true);
+      if (location.pathname === routes.upgrade) {
+        navigate(routes.home);
+        alert("Already on pro plan!");
+      }
+    }
+  };
+
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (authUser: any) => {
+      setProAlertShown(false);
+
+      if (!authUser) {
+        localStorage.removeItem("isPro");
+        setUser(null);
+        setLoading(false);
+        if (location.pathname !== routes.signup) navigate(routes.signup);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `http://localhost:8081/check?id=${authUser.uid}`
+        );
+        const isPro = await res.text();
+        localStorage.setItem("isPro", isPro);
+      } catch (e) {
+        console.error("Pro check failed:", e);
+      }
+
       setUser(authUser);
       setLoading(false);
-      if (!authUser) {
-        if (location.pathname !== routes.signup) navigate(routes.signup);
-      } else if (location.pathname === routes.signup) {
+      checkProStatus();
+
+      if (location.pathname === routes.signup) {
         navigate(routes.home);
       } else if (
         !Object.values(routes).some((route) =>
@@ -46,22 +76,8 @@ const App = () => {
       }
     });
 
-    checkProStatus();
-
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, [navigate, location]);
-
-  const checkProStatus = () => {
-    if (localStorage.getItem("isPro") === "true" && !proAlertShown) {
-      setProAlertShown(true);
-      if (location.pathname === routes.upgrade) {
-        navigate(routes.home);
-        alert("Already on pro plan!");
-      }
-    }
-  };
 
   return loading ? (
     <Loading />

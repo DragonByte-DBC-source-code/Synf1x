@@ -13,6 +13,7 @@ type Group = {
 
 interface GroupItemProps {
   group: Group;
+  onSelect: (id: string) => void;
 }
 
 interface GroupsDisplayProps {
@@ -21,16 +22,23 @@ interface GroupsDisplayProps {
   set: any;
 }
 
-const GroupItem: React.FC<GroupItemProps> = ({ group }) => {
+const GroupItem: React.FC<GroupItemProps> = ({ group, onSelect }) => {
   return (
-    <div
-      className="ease-in-out flex justify-center items-center border-b border-gray-700 hover:bg-gray-800 hover:text-gray-300 cursor-pointer transition-all duration-300 h-full"
-      key={group.id}
+    <button
+      type="button"
+      onClick={() => onSelect(group.id)}
+      className="w-full text-left px-4 py-3 flex items-center justify-between gap-2
+        border-b border-gray-700/70 last:border-b-0
+        text-gray-200 hover:bg-gray-700/60 hover:text-white
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/70
+        transition-colors duration-150"
     >
-      <p className="text-2xl py-2 text-center w-full hover:text-gray-300 ease-in-out">
-        {group.name}
-      </p>
-    </div>
+      <span className="text-base truncate">{group.name}</span>
+      <span className="text-xs text-gray-500 shrink-0">
+        {group.members.length}{" "}
+        {group.members.length === 1 ? "member" : "members"}
+      </span>
+    </button>
   );
 };
 
@@ -43,6 +51,12 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
   const arrowAnimation = useSpring({
     transform: `rotate(${showMenu ? 0 : -90}deg)`,
     config: { tension: 400, friction: 20 },
+  });
+
+  const panelAnimation = useSpring({
+    opacity: showMenu ? 1 : 0,
+    transform: showMenu ? "translateY(0px)" : "translateY(-6px)",
+    config: { tension: 400, friction: 30 },
   });
 
   useEffect(() => {
@@ -70,14 +84,18 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
 
   return (
     <div className="mb-4 w-full flex flex-col items-center rounded-2xl bg-transparent">
-      <h2
-        className="text-2xl italic mt-12 cursor-pointer flex items-center"
+      <button
+        type="button"
         onClick={() => setShowMenu((show) => !show)}
+        aria-expanded={showMenu}
+        className="mt-12 flex items-center gap-1.5 text-2xl italic text-gray-100
+          hover:text-gray-300 transition-colors duration-150
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/70 rounded-md px-1"
       >
         Your Groups
         <animated.svg
           style={arrowAnimation}
-          className="ml-1 w-5 h-5 mt-1 transform"
+          className="w-5 h-5 mt-1"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -90,43 +108,43 @@ const GroupsDisplay: React.FC<GroupsDisplayProps> = ({ groups, user, set }) => {
             d="M19 9l-7 7-7-7"
           />
         </animated.svg>
-      </h2>
-      {showMenu && <p className="text-sm mb-2">Explore Below:</p>}
-      {showMenu && (
-        <div className="overflow-auto h-40 w-1/2 bg-gray-800 text-white rounded-md scrollbar">
-          {userGroups.length > 0 ? (
-            <>
-              {userGroups.map((group) => (
-                <div
-                  onClick={() => navigate(`/groups/${group.id}`)}
-                  className="w-full h-full"
-                  key={group.id}
-                >
-                  <GroupItem key={group.id} group={group} />
-                </div>
-              ))}
-            </>
-          ) : (
-            <>
+      </button>
+
+      <animated.div
+        style={panelAnimation}
+        className="w-full flex flex-col items-center"
+      >
+        {showMenu && (
+          <>
+            <p className="text-sm text-gray-400 mb-2">Explore below:</p>
+
+            <div className="overflow-auto h-40 w-full max-w-sm bg-gray-800 text-white rounded-xl border border-gray-700/70 shadow-sm scrollbar">
               {showLoading ? (
-                <Loading />
+                <div className="h-full flex items-center justify-center">
+                  <Loading />
+                </div>
+              ) : userGroups.length > 0 ? (
+                userGroups.map((group) => (
+                  <GroupItem
+                    key={group.id}
+                    group={group}
+                    onSelect={(id) => navigate(`/groups/${id}`)}
+                  />
+                ))
               ) : (
-                <>
-                  <p className="text-center py-2 text-lg max-sm:hidden">
-                    No groups! Join or create some so they'll be shown here.
+                <div className="h-full flex items-center justify-center px-4">
+                  <p className="text-center text-gray-300">
+                    <span className="hidden sm:inline">
+                      No groups! Join or create some so they'll be shown here.
+                    </span>
+                    <span className="sm:hidden">No groups to show!</span>
                   </p>
-                  {/* The message for small screens */}
-                  <div className="md:hidden max-sm:visible">
-                    <p className="text-center py-2 text-lg">
-                      No groups to show!
-                    </p>
-                  </div>
-                </>
+                </div>
               )}
-            </>
-          )}
-        </div>
-      )}
+            </div>
+          </>
+        )}
+      </animated.div>
     </div>
   );
 };
